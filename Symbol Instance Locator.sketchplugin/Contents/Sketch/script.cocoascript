@@ -1,0 +1,86 @@
+var onRun = function(context) {
+	var pluginName = "Symbol Instance Locator";
+
+	var doc = context.document;
+	var page = doc.currentPage();
+	var pages = doc.pages();
+	var selection = context.selection;
+
+	switch (selection.count()) {
+		case 0:
+			displayDialog("Please select a symbol master or instance.",pluginName);
+			break;
+		case 1:
+			if (selection.objectAtIndex(0) instanceof MSSymbolMaster || selection.objectAtIndex(0) instanceof MSSymbolInstance) {
+				var symbol = selection.objectAtIndex(0);
+				var symbolMaster = (symbol instanceof MSSymbolMaster) ? symbol.name() : symbol.symbolMaster().name();
+				var symbolInstances = [];
+
+				for (var i = 0; i < pages.count(); i++) {
+					getSymbolInstances(symbolMaster,pages.objectAtIndex(i));
+				}
+
+				if (symbolInstances.length > 0) {
+					var output = "\"" + symbolMaster + "\" was found " + symbolInstances.length + " times…\n\n";
+
+					for (var i = 0; i < symbolInstances.length; i++) {
+						var thisPath = symbolInstances[i]['path'] + "\n";
+						output = (!output) ? thisPath : output + thisPath;
+					}
+
+					displayDialog(output,pluginName);
+				} else {
+					displayDialog("\"" + symbolMaster + "\" has no instances.",pluginName);
+				}
+			} else {
+				displayDialog("Please select a symbol master or instance.",pluginName);
+			}
+			break;
+		default:
+			displayDialog("Please select just one symbol master or instance.",pluginName);
+	}
+
+	function getSymbolInstances(symbolMaster,scope) {
+		if (scope instanceof MSSymbolInstance && scope.symbolMaster().name() == symbolMaster) {
+			//var separator = "*";
+
+			symbolInstances.push({
+				//path: getParentPath(scope) + separator + scope.name() + separator
+				path: getParentPath(scope)
+			});
+
+			return symbolInstances;
+		} else {
+			try {
+				var children = scope.layers();
+
+				for (var i = 0; i < children.length; i++) {
+					getSymbolInstances(symbolMaster,children.objectAtIndex(i));
+				}
+			} catch(e) {
+				log(e);
+			}
+		}
+	};
+
+	function getParentPath(layer,path) {
+		var separator = "/";
+		var parentPath = (!path) ? '' : path;
+		var parentGroup = layer.parentGroup();
+
+		if (parentGroup) {
+			parentPath = parentGroup.name() + separator + parentPath;
+
+			if (parentGroup.parentGroup()) {
+				parentPath = getParentPath(parentGroup,parentPath);
+			}
+		}
+
+		return parentPath;
+	}
+
+	function displayDialog(message,title) {
+		var app = NSApplication.sharedApplication();
+		app.displayDialog_withTitle(message,title);
+	}
+};
