@@ -1,86 +1,91 @@
-var onRun = function(context) {
-	var pluginName = "Symbol Instance Locator";
+var strPluginName = "Symbol Instance Locator";
 
-	var doc = context.document;
-	var page = doc.currentPage();
-	var pages = doc.pages();
+var onRun = function(context) {
 	var selection = context.selection;
 
-	switch (selection.count()) {
-		case 0:
-			displayDialog("Please select a symbol master or instance.",pluginName);
-			break;
-		case 1:
-			if (selection.objectAtIndex(0) instanceof MSSymbolMaster || selection.objectAtIndex(0) instanceof MSSymbolInstance) {
-				var symbol = selection.objectAtIndex(0);
-				var symbolMaster = (symbol instanceof MSSymbolMaster) ? symbol.name() : symbol.symbolMaster().name();
-				var symbolInstances = [];
+	if (selection.count() == 1 && (selection[0] instanceof MSSymbolMaster || selection[0] instanceof MSSymbolInstance)) {
+		var symbol = selection[0],
+			symbolMaster = (symbol instanceof MSSymbolMaster) ? symbol : symbol.symbolMaster(),
+			symbolInstances = [];
 
-				for (var i = 0; i < pages.count(); i++) {
-					getSymbolInstances(symbolMaster,pages.objectAtIndex(i));
-				}
+		var pages = context.document.pages(),
+			loop = pages.objectEnumerator(),
+			page;
 
-				if (symbolInstances.length > 0) {
-					var output = "\"" + symbolMaster + "\" was found " + symbolInstances.length + " times…\n\n";
+		while (page = loop.nextObject()) {
+			var predicate = NSPredicate.predicateWithFormat("className == 'MSSymbolInstance' && symbolMaster == %@",symbolMaster),
+				instances = page.children().filteredArrayUsingPredicate(predicate),
+				instanceLoop = instances.objectEnumerator(),
+				instance;
 
-					for (var i = 0; i < symbolInstances.length; i++) {
-						var thisPath = symbolInstances[i]['path'] + "\n";
-						output = (!output) ? thisPath : output + thisPath;
-					}
-
-					displayDialog(output,pluginName);
-				} else {
-					displayDialog("\"" + symbolMaster + "\" has no instances.",pluginName);
-				}
-			} else {
-				displayDialog("Please select a symbol master or instance.",pluginName);
+			while (instance = instanceLoop.nextObject()) {
+				symbolInstances.push(getInstancePath(instance));
 			}
-			break;
-		default:
-			displayDialog("Please select just one symbol master or instance.",pluginName);
-	}
+		}
 
-	function getSymbolInstances(symbolMaster,scope) {
-		if (scope instanceof MSSymbolInstance && scope.symbolMaster().name() == symbolMaster) {
-			//var separator = "*";
+		if (symbolInstances.length > 0) {
+			var alertWindow = COSAlertWindow.new();
+			alertWindow.setMessageText(strPluginName);
 
-			symbolInstances.push({
-				//path: getParentPath(scope) + separator + scope.name() + separator
-				path: getParentPath(scope)
-			});
+			alertWindow.addTextLabelWithValue(symbolMaster.name() + " has " + symbolInstances.length + " instance(s)...");
 
-			return symbolInstances;
+			var instanceItemHeight = 24,
+				instanceFrameHeight = instanceItemHeight * (symbolInstances.length),
+				instanceFrame = NSScrollView.alloc().initWithFrame(NSMakeRect(0,0,300,200)),
+				instanceFrameSize = instanceFrame.contentSize(),
+				instanceFrameInner = NSView.alloc().initWithFrame(NSMakeRect(0,0,instanceFrameSize.width,instanceFrameHeight)),
+				count = 0;
+
+			instanceFrame.setHasVerticalScroller(true);
+			instanceFrameInner.setFlipped(true);
+			instanceFrame.setDocumentView(instanceFrameInner);
+
+			for (var i = 0; i < symbolInstances.length; i++) {
+				instanceFrameInner.addSubview(createListItem(symbolInstances[i],NSMakeRect(0,instanceItemHeight*count,300,instanceItemHeight)));
+				count++;
+			}
+
+			instanceFrameInner.scrollPoint(NSMakePoint(0,0));
+
+			alertWindow.addAccessoryView(instanceFrame);
+
+			alertWindow.addButtonWithTitle("OK");
+
+			alertWindow.runModal();
 		} else {
-			try {
-				var children = scope.layers();
-
-				for (var i = 0; i < children.length; i++) {
-					getSymbolInstances(symbolMaster,children.objectAtIndex(i));
-				}
-			} catch(e) {
-				log(e);
-			}
+			displayDialog(symbolMaster.name() + " has no instances.",strPluginName);
 		}
-	};
+	} else {
+		displayDialog("Select one symbol master or instance.",strPluginName);
+	}
+}
 
-	function getParentPath(layer,path) {
-		var separator = "/";
-		var parentPath = (!path) ? '' : path;
-		var parentGroup = layer.parentGroup();
+function getInstancePath(layer,path) {
+	var parentPath = (!path) ? layer.name() : path,
+		parentGroup = layer.parentGroup(),
+		separator = "/";
 
-		if (parentGroup) {
-			parentPath = parentGroup.name() + separator + parentPath;
+	if (parentGroup) {
+		parentPath = parentGroup.name() + separator + parentPath;
 
-			if (parentGroup.parentGroup()) {
-				parentPath = getParentPath(parentGroup,parentPath);
-			}
+		if (parentGroup.parentGroup()) {
+			parentPath = getInstancePath(parentGroup,parentPath);
 		}
-
-		return parentPath;
 	}
 
-	function displayDialog(message,title) {
-		var app = NSApplication.sharedApplication();
-		app.displayDialog_withTitle(message,title);
-	}
-};
+	return parentPath;
+}
+
+function displayDialog(message,title) {
+	NSApplication.sharedApplication().displayDialog_withTitle(message,title);
+}
+
+function createListItem(text,frame) {
+	var listItem = NSTextField.alloc().initWithFrame(frame);
+	listItem.setStringValue(text);
+	listItem.setFont(NSFont.systemFontOfSize(12));
+	listItem.setBezeled(false);
+	listItem.setEditable(false);
+
+	return listItem;
+}

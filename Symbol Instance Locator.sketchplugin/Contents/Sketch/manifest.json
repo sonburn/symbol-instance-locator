@@ -1,24 +1,24 @@
 {
 	"author" : "Jason Burns",
-	"commands" : [{
-		"script" : "script.cocoascript",
-		"name" : "Symbol Instance Locator",
-		"shortcut": "cmd option shift l",
-		"handlers" : {
-			"run" : "onRun"
-		},
-		"identifier" : "com.bohemiancoding.sketch.runscriptidentifier"
-	}],
+	"commands" : [
+		{
+			"name" : "Symbol Instance Locator",
+			"shortcut": "cmd option shift l",
+			"identifier" : "instanceLocator",
+			"script" : "script.cocoascript",
+		}
+	],
 	"menu" : {
-		"items" : [
-			"com.bohemiancoding.sketch.runscriptidentifier"
-		],
 		"title" : "Symbol Instance Locator",
+		"items" : [
+			"instanceLocator"
+		],
 		"isRoot" : true
 	},
-	"identifier" : "com.example.sketch.87a00aba-cbe4-4893-a629-330387526172",
-	"version" : "0.1",
+	"identifier" : "com.sonburn.sketchplugins.symbol-instance-locator",
+	"version" : "0.2",
 	"description" : "Locate all instances of a selected symbol or instance.",
 	"authorEmail" : "jason.burns@synchronoss.com",
-	"name" : "Symbol Instance Locator"
+	"name" : "Symbol Instance Locator",
+	"appcast" : "https://raw.githubusercontent.com/sonburn/symbol-instance-locator/master/appcast.xml"
 }
