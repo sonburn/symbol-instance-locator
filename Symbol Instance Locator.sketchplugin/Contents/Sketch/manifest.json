@@ -16,7 +16,7 @@
 		"isRoot" : true
 	},
 	"identifier" : "com.sonburn.sketchplugins.symbol-instance-locator",
-	"version" : "0.2",
+	"version" : "0.3",
 	"description" : "Locate all instances of a selected symbol or instance.",
 	"authorEmail" : "jason.burns@synchronoss.com",
 	"name" : "Symbol Instance Locator",

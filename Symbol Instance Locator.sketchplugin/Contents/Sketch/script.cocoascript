@@ -19,7 +19,7 @@ var onRun = function(context) {
 				instance;
 
 			while (instance = instanceLoop.nextObject()) {
-				symbolInstances.push(getInstancePath(instance));
+				symbolInstances.push(instance);
 			}
 		}
 
@@ -27,7 +27,9 @@ var onRun = function(context) {
 			var alertWindow = COSAlertWindow.new();
 			alertWindow.setMessageText(strPluginName);
 
-			alertWindow.addTextLabelWithValue(symbolMaster.name() + " has " + symbolInstances.length + " instance(s)...");
+			alertWindow.addTextLabelWithValue(symbolMaster.name() + " has " + symbolInstances.length + " instance(s).");
+
+			alertWindow.addTextLabelWithValue("Select an instance to navigate to it's location.");
 
 			var instanceItemHeight = 24,
 				instanceFrameHeight = instanceItemHeight * (symbolInstances.length),
@@ -41,7 +43,7 @@ var onRun = function(context) {
 			instanceFrame.setDocumentView(instanceFrameInner);
 
 			for (var i = 0; i < symbolInstances.length; i++) {
-				instanceFrameInner.addSubview(createListItem(symbolInstances[i],NSMakeRect(0,instanceItemHeight*count,300,instanceItemHeight)));
+				instanceFrameInner.addSubview(createbutton(context,symbolInstances[i],NSMakeRect(0,instanceItemHeight*count,284,instanceItemHeight)));
 				count++;
 			}
 
@@ -49,7 +51,7 @@ var onRun = function(context) {
 
 			alertWindow.addAccessoryView(instanceFrame);
 
-			alertWindow.addButtonWithTitle("OK");
+			alertWindow.addButtonWithTitle("Close");
 
 			alertWindow.runModal();
 		} else {
@@ -80,12 +82,45 @@ function displayDialog(message,title) {
 	NSApplication.sharedApplication().displayDialog_withTitle(message,title);
 }
 
-function createListItem(text,frame) {
-	var listItem = NSTextField.alloc().initWithFrame(frame);
-	listItem.setStringValue(text);
-	listItem.setFont(NSFont.systemFontOfSize(12));
-	listItem.setBezeled(false);
-	listItem.setEditable(false);
+function createbutton(context,instance,frame) {
+	var button = NSButton.alloc().initWithFrame(frame);
+	button.setTitle(getInstancePath(instance));
+	button.setAlignment(NSLeftTextAlignment);
+	button.setBordered(0);
+	button.setAction("callAction:");
+	button.setCOSJSTargetFunction(function(sender) {
+		NSApp.stopModalWithCode(NSOKButton);
 
-	return listItem;
+		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.absoluteRect().rect();
+
+		context.document.setCurrentPage(instance.parentPage());
+		context.document.currentView().zoomToFitRect(rect);
+
+		instance.select_byExpandingSelection(true,false);
+	});
+
+	// var exportRequest = MSExportRequest.exportRequestsFromExportableLayer_inRect_useIDForName_(
+	// 	instance,
+	// 	instance.absoluteInfluenceRect(),
+	// 	false
+	// 	).firstObject();
+	//
+	// exportRequest.format = "png";
+	//
+	// var scaleX = 150 / exportRequest.rect().size.width;
+	// var scaleY = 40 / exportRequest.rect().size.height;
+	//
+	// exportRequest.scale = (scaleX < scaleY) ? scaleX : scaleY;
+	//
+	// var colorSpace = NSColorSpace.sRGBColorSpace(),
+	// 	exporter = MSExporter.exporterForRequest_colorSpace_(exportRequest,colorSpace),
+	// 	imageRep = exporter.bitmapImageRep(),
+	// 	instanceImage = NSImage.alloc().init().autorelease();
+	//
+	// instanceImage.addRepresentation(imageRep);
+	//
+	// button.setImage(instanceImage);
+	// button.setImagePosition(NSImageRight);
+
+	return button;
 }
