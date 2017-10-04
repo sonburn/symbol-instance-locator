@@ -1,6 +1,8 @@
-# Symbol Instance Locator
+![Symbol Instance Locator](https://raw.githubusercontent.com/sonburn/symbol-instance-locator/master/logo.png)
 
 Locate all instances of a selected symbol or instance. Select an instance in the list of results to jump to it's location.
+
+![Symbol Instance Locator](https://raw.githubusercontent.com/sonburn/symbol-instance-locator/master/Screenshots/Symbol%20Instance%20Locator.png)
 
 <a href="http://bit.ly/SketchRunnerWebsite">
 	<img width="160" height="41" src="http://bit.ly/RunnerBadgeBlue" alt="runner-badge-blue">
@@ -37,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.0** - Found instances now display image of the instance, page where the instance reside, and instance name.
 * **0.3** - Converted list of instances to NSButtons, which when selected, will now navigate user to location of instance.
 * **0.2** - Added appcast plugin support for Sketch 45 and later. Significantly improved processing time, and presentation of results.
 * **0.1** - Initial commit. Functional, but rudimentary and will be improved upon.

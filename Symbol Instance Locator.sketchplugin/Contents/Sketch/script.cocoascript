@@ -25,15 +25,18 @@ var onRun = function(context) {
 
 		if (symbolInstances.length > 0) {
 			var alertWindow = COSAlertWindow.new();
+
+			alertWindow.setIcon(NSImage.alloc().initByReferencingFile(context.plugin.urlForResourceNamed("icon.png").path()));
 			alertWindow.setMessageText(strPluginName);
 
 			alertWindow.addTextLabelWithValue(symbolMaster.name() + " has " + symbolInstances.length + " instance(s).");
 
 			alertWindow.addTextLabelWithValue("Select an instance to navigate to it's location.");
 
-			var instanceItemHeight = 24,
+			var instanceItemHeight = 60,
+				instanceItemWidth = 286,
 				instanceFrameHeight = instanceItemHeight * (symbolInstances.length),
-				instanceFrame = NSScrollView.alloc().initWithFrame(NSMakeRect(0,0,300,200)),
+				instanceFrame = NSScrollView.alloc().initWithFrame(NSMakeRect(0,0,300,300)),
 				instanceFrameSize = instanceFrame.contentSize(),
 				instanceFrameInner = NSView.alloc().initWithFrame(NSMakeRect(0,0,instanceFrameSize.width,instanceFrameHeight)),
 				count = 0;
@@ -43,7 +46,7 @@ var onRun = function(context) {
 			instanceFrame.setDocumentView(instanceFrameInner);
 
 			for (var i = 0; i < symbolInstances.length; i++) {
-				instanceFrameInner.addSubview(createbutton(context,symbolInstances[i],NSMakeRect(0,instanceItemHeight*count,284,instanceItemHeight)));
+				instanceFrameInner.addSubview(createbutton(context,symbolInstances[i],NSMakeRect(0,instanceItemHeight*count,instanceItemWidth,instanceItemHeight)));
 				count++;
 			}
 
@@ -62,33 +65,86 @@ var onRun = function(context) {
 	}
 }
 
-function getInstancePath(layer,path) {
-	var parentPath = (!path) ? layer.name() : path,
-		parentGroup = layer.parentGroup(),
-		separator = "/";
-
-	if (parentGroup) {
-		parentPath = parentGroup.name() + separator + parentPath;
-
-		if (parentGroup.parentGroup()) {
-			parentPath = getInstancePath(parentGroup,parentPath);
-		}
-	}
-
-	return parentPath;
-}
-
 function displayDialog(message,title) {
 	NSApplication.sharedApplication().displayDialog_withTitle(message,title);
 }
 
 function createbutton(context,instance,frame) {
-	var button = NSButton.alloc().initWithFrame(frame);
-	button.setTitle(getInstancePath(instance));
-	button.setAlignment(NSLeftTextAlignment);
-	button.setBordered(0);
-	button.setAction("callAction:");
-	button.setCOSJSTargetFunction(function(sender) {
+	var rightColWidth = 120,
+		leftColWidth = frame.size.width-rightColWidth,
+		colPad = 4;
+
+	var view = NSView.alloc().initWithFrame(frame);
+	view.setFlipped(1);
+
+	var pageLabel = NSTextField.alloc().initWithFrame(NSMakeRect(colPad,2,leftColWidth,14));
+	pageLabel.setStringValue("Page Name");
+	pageLabel.setFont(NSFont.boldSystemFontOfSize(10));
+	pageLabel.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,0.4));
+	pageLabel.setBezeled(0);
+	pageLabel.setEditable(0);
+	view.addSubview(pageLabel);
+
+	var pageText = NSTextField.alloc().initWithFrame(NSMakeRect(colPad,15,leftColWidth,18));
+	pageText.setStringValue(instance.parentPage().name());
+	pageText.setFont(NSFont.systemFontOfSize(11));
+	pageText.setBezeled(0);
+	pageText.setEditable(0);
+	view.addSubview(pageText);
+
+	var nameLabel = NSTextField.alloc().initWithFrame(NSMakeRect(colPad,29,leftColWidth,14));
+	nameLabel.setStringValue("Instance Name");
+	nameLabel.setFont(NSFont.boldSystemFontOfSize(10));
+	nameLabel.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,0.4));
+	nameLabel.setBezeled(0);
+	nameLabel.setEditable(0);
+	view.addSubview(nameLabel);
+
+	var nameText = NSTextField.alloc().initWithFrame(NSMakeRect(colPad,42,leftColWidth,18));
+	nameText.setStringValue(instance.name());
+	nameText.setFont(NSFont.systemFontOfSize(11));
+	nameText.setBezeled(0);
+	nameText.setEditable(0);
+	view.addSubview(nameText);
+
+	var imageArea = NSButton.alloc().initWithFrame(NSMakeRect(leftColWidth,0,rightColWidth,60));
+	imageArea.setTitle("");
+	imageArea.setBordered(0);
+	imageArea.setWantsLayer(1);
+	imageArea.layer().setBackgroundColor(CGColorCreateGenericRGB(241/255,241/255,241/255,1.0));
+	view.addSubview(imageArea);
+
+	var exportRequest = MSExportRequest.exportRequestsFromExportableLayer_inRect_useIDForName_(
+		instance,
+		instance.absoluteInfluenceRect(),
+		false
+		).firstObject();
+
+	exportRequest.format = "png";
+
+	var scaleX = (rightColWidth-colPad*2) / exportRequest.rect().size.width;
+	var scaleY = (60-colPad*2) / exportRequest.rect().size.height;
+
+	exportRequest.scale = (scaleX < scaleY) ? scaleX : scaleY;
+
+	var colorSpace = NSColorSpace.sRGBColorSpace(),
+		exporter = MSExporter.exporterForRequest_colorSpace_(exportRequest,colorSpace),
+		imageRep = exporter.bitmapImageRep(),
+		instanceImage = NSImage.alloc().init().autorelease();
+
+	instanceImage.addRepresentation(imageRep);
+
+	imageArea.setImage(instanceImage);
+
+	var line = NSView.alloc().initWithFrame(NSMakeRect(0,59,286,1));
+	line.setWantsLayer(1);
+	line.layer().setBackgroundColor(CGColorCreateGenericRGB(204/255,204/255,204/255,1.0));
+	view.addSubview(line);
+
+	var hitbox = NSButton.alloc().initWithFrame(NSMakeRect(0,0,frame.size.width,frame.size.height));
+	hitbox.setTransparent(1);
+	hitbox.setAction("callAction:");
+	hitbox.setCOSJSTargetFunction(function(sender) {
 		NSApp.stopModalWithCode(NSOKButton);
 
 		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.absoluteRect().rect();
@@ -99,28 +155,7 @@ function createbutton(context,instance,frame) {
 		instance.select_byExpandingSelection(true,false);
 	});
 
-	// var exportRequest = MSExportRequest.exportRequestsFromExportableLayer_inRect_useIDForName_(
-	// 	instance,
-	// 	instance.absoluteInfluenceRect(),
-	// 	false
-	// 	).firstObject();
-	//
-	// exportRequest.format = "png";
-	//
-	// var scaleX = 150 / exportRequest.rect().size.width;
-	// var scaleY = 40 / exportRequest.rect().size.height;
-	//
-	// exportRequest.scale = (scaleX < scaleY) ? scaleX : scaleY;
-	//
-	// var colorSpace = NSColorSpace.sRGBColorSpace(),
-	// 	exporter = MSExporter.exporterForRequest_colorSpace_(exportRequest,colorSpace),
-	// 	imageRep = exporter.bitmapImageRep(),
-	// 	instanceImage = NSImage.alloc().init().autorelease();
-	//
-	// instanceImage.addRepresentation(imageRep);
-	//
-	// button.setImage(instanceImage);
-	// button.setImagePosition(NSImageRight);
+	view.addSubview(hitbox);
 
-	return button;
+	return view;
 }
