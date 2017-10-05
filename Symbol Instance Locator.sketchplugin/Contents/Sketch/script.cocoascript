@@ -35,22 +35,22 @@ var onRun = function(context) {
 
 			var instanceItemHeight = 60,
 				instanceItemWidth = 286,
-				instanceFrameHeight = instanceItemHeight * (symbolInstances.length),
-				instanceFrame = NSScrollView.alloc().initWithFrame(NSMakeRect(0,0,300,300)),
+				instanceFrameInnerHeight = instanceItemHeight * (symbolInstances.length),
+				instanceFrameMaxHeight = 300,
+				instanceFrameHeight = (instanceFrameInnerHeight < instanceFrameMaxHeight) ? instanceFrameInnerHeight : instanceFrameMaxHeight,
+				instanceFrame = NSScrollView.alloc().initWithFrame(NSMakeRect(0,0,300,instanceFrameHeight)),
 				instanceFrameSize = instanceFrame.contentSize(),
-				instanceFrameInner = NSView.alloc().initWithFrame(NSMakeRect(0,0,instanceFrameSize.width,instanceFrameHeight)),
+				instanceFrameInner = NSView.alloc().initWithFrame(NSMakeRect(0,0,instanceFrameSize.width,instanceFrameInnerHeight)),
 				count = 0;
 
-			instanceFrame.setHasVerticalScroller(true);
 			instanceFrameInner.setFlipped(true);
+			instanceFrame.setHasVerticalScroller(true);
 			instanceFrame.setDocumentView(instanceFrameInner);
 
 			for (var i = 0; i < symbolInstances.length; i++) {
-				instanceFrameInner.addSubview(createbutton(context,symbolInstances[i],NSMakeRect(0,instanceItemHeight*count,instanceItemWidth,instanceItemHeight)));
+				instanceFrameInner.addSubview(createListItem(symbolInstances[i],NSMakeRect(0,instanceItemHeight*count,instanceItemWidth,instanceItemHeight)));
 				count++;
 			}
-
-			instanceFrameInner.scrollPoint(NSMakePoint(0,0));
 
 			alertWindow.addAccessoryView(instanceFrame);
 
@@ -69,50 +69,62 @@ function displayDialog(message,title) {
 	NSApplication.sharedApplication().displayDialog_withTitle(message,title);
 }
 
-function createbutton(context,instance,frame) {
-	var rightColWidth = 120,
-		leftColWidth = frame.size.width-rightColWidth,
-		colPad = 4;
+function createListItem(instance,frame) {
+	var listItem = NSView.alloc().initWithFrame(frame),
+		rightColWidth = 120,
+		leftColWidth = frame.size.width-rightColWidth;
 
-	var view = NSView.alloc().initWithFrame(frame);
-	view.setFlipped(1);
+	listItem.setFlipped(1);
+	listItem.addSubview(createTextLabel("Page Name",NSMakeRect(4,2,leftColWidth,14)));
+	listItem.addSubview(createTextField(instance.parentPage().name(),NSMakeRect(4,15,leftColWidth,18)));
+	listItem.addSubview(createTextLabel("Instance Name",NSMakeRect(4,29,leftColWidth,14)));
+	listItem.addSubview(createTextField(instance.name(),NSMakeRect(4,42,leftColWidth,18)));
+	listItem.addSubview(createImageArea(instance,NSMakeRect(leftColWidth,0,rightColWidth,frame.size.height)));
+	listItem.addSubview(createDivider(NSMakeRect(0,59,frame.size.width,1)));
+	listItem.addSubview(createTargetArea(instance,NSMakeRect(0,0,frame.size.width,frame.size.height)));
 
-	var pageLabel = NSTextField.alloc().initWithFrame(NSMakeRect(colPad,2,leftColWidth,14));
-	pageLabel.setStringValue("Page Name");
-	pageLabel.setFont(NSFont.boldSystemFontOfSize(10));
-	pageLabel.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,0.4));
-	pageLabel.setBezeled(0);
-	pageLabel.setEditable(0);
-	view.addSubview(pageLabel);
+	return listItem;
+}
 
-	var pageText = NSTextField.alloc().initWithFrame(NSMakeRect(colPad,15,leftColWidth,18));
-	pageText.setStringValue(instance.parentPage().name());
-	pageText.setFont(NSFont.systemFontOfSize(11));
-	pageText.setBezeled(0);
-	pageText.setEditable(0);
-	view.addSubview(pageText);
+function createTextLabel(string,frame) {
+	var textLabel = NSTextField.alloc().initWithFrame(frame);
 
-	var nameLabel = NSTextField.alloc().initWithFrame(NSMakeRect(colPad,29,leftColWidth,14));
-	nameLabel.setStringValue("Instance Name");
-	nameLabel.setFont(NSFont.boldSystemFontOfSize(10));
-	nameLabel.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,0.4));
-	nameLabel.setBezeled(0);
-	nameLabel.setEditable(0);
-	view.addSubview(nameLabel);
+	textLabel.setStringValue(string);
+	textLabel.setFont(NSFont.boldSystemFontOfSize(10));
+	textLabel.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,0.4));
+	textLabel.setBezeled(0);
+	textLabel.setEditable(0);
 
-	var nameText = NSTextField.alloc().initWithFrame(NSMakeRect(colPad,42,leftColWidth,18));
-	nameText.setStringValue(instance.name());
-	nameText.setFont(NSFont.systemFontOfSize(11));
-	nameText.setBezeled(0);
-	nameText.setEditable(0);
-	view.addSubview(nameText);
+	return textLabel;
+}
 
-	var imageArea = NSButton.alloc().initWithFrame(NSMakeRect(leftColWidth,0,rightColWidth,60));
+function createTextField(string,frame) {
+	var textField = NSTextField.alloc().initWithFrame(frame);
+
+	textField.setStringValue(string);
+	textField.setFont(NSFont.systemFontOfSize(11));
+	textField.setBezeled(0);
+	textField.setEditable(0);
+
+	return textField;
+}
+
+function createDivider(frame) {
+	var divider = NSView.alloc().initWithFrame(frame);
+
+	divider.setWantsLayer(1);
+	divider.layer().setBackgroundColor(CGColorCreateGenericRGB(204/255,204/255,204/255,1.0));
+
+	return divider;
+}
+
+function createImageArea(instance,frame) {
+	var imageArea = NSButton.alloc().initWithFrame(frame);
+
 	imageArea.setTitle("");
 	imageArea.setBordered(0);
 	imageArea.setWantsLayer(1);
 	imageArea.layer().setBackgroundColor(CGColorCreateGenericRGB(241/255,241/255,241/255,1.0));
-	view.addSubview(imageArea);
 
 	var exportRequest = MSExportRequest.exportRequestsFromExportableLayer_inRect_useIDForName_(
 		instance,
@@ -122,8 +134,8 @@ function createbutton(context,instance,frame) {
 
 	exportRequest.format = "png";
 
-	var scaleX = (rightColWidth-colPad*2) / exportRequest.rect().size.width;
-	var scaleY = (60-colPad*2) / exportRequest.rect().size.height;
+	var scaleX = (frame.size.width-4*2) / exportRequest.rect().size.width;
+	var scaleY = (frame.size.height-4*2) / exportRequest.rect().size.height;
 
 	exportRequest.scale = (scaleX < scaleY) ? scaleX : scaleY;
 
@@ -136,26 +148,24 @@ function createbutton(context,instance,frame) {
 
 	imageArea.setImage(instanceImage);
 
-	var line = NSView.alloc().initWithFrame(NSMakeRect(0,59,286,1));
-	line.setWantsLayer(1);
-	line.layer().setBackgroundColor(CGColorCreateGenericRGB(204/255,204/255,204/255,1.0));
-	view.addSubview(line);
+	return imageArea;
+}
 
-	var hitbox = NSButton.alloc().initWithFrame(NSMakeRect(0,0,frame.size.width,frame.size.height));
-	hitbox.setTransparent(1);
-	hitbox.setAction("callAction:");
-	hitbox.setCOSJSTargetFunction(function(sender) {
+function createTargetArea(instance,frame) {
+	var targetArea = NSButton.alloc().initWithFrame(frame);
+
+	targetArea.setTransparent(1);
+	targetArea.setAction("callAction:");
+	targetArea.setCOSJSTargetFunction(function(sender) {
 		NSApp.stopModalWithCode(NSOKButton);
 
 		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.absoluteRect().rect();
 
-		context.document.setCurrentPage(instance.parentPage());
-		context.document.currentView().zoomToFitRect(rect);
+		MSDocument.currentDocument().setCurrentPage(instance.parentPage());
+		MSDocument.currentDocument().currentView().zoomToFitRect(rect);
 
 		instance.select_byExpandingSelection(true,false);
 	});
 
-	view.addSubview(hitbox);
-
-	return view;
+	return targetArea;
 }
