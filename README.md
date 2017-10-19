@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.2** - Update to make the result window a floating panel, highlight for current selection, and artboard name.
 * **1.1** - Code optimizations and dialog frame will now be smaller if a small set of results are returned.
 * **1.0** - Found instances now display image of the instance, page where the instance reside, and instance name.
 * **0.3** - Converted list of instances to NSButtons, which when selected, will now navigate user to location of instance.

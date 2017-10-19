@@ -3,7 +3,7 @@
 	"commands" : [
 		{
 			"name" : "Symbol Instance Locator",
-			"shortcut": "cmd option shift l",
+			"shortcut" : "cmd option shift l",
 			"identifier" : "instanceLocator",
 			"description" : "Locate instances of the selected symbol or instance.",
 			"script" : "script.cocoascript",
@@ -18,7 +18,7 @@
 		"isRoot" : true
 	},
 	"identifier" : "com.sonburn.sketchplugins.symbol-instance-locator",
-	"version" : "1.1",
+	"version" : "1.2",
 	"description" : "Locate all instances of a selected symbol or instance.",
 	"authorEmail" : "jason.burns@synchronoss.com",
 	"name" : "Symbol Instance Locator",

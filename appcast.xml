@@ -6,15 +6,15 @@
 		<description>Locate all instances of a selected symbol or instance.</description>
 		<language>en</language>
 		<item>
-			<title>Version 1.1</title>
+			<title>Version 1.2</title>
 			<description>
 				<![CDATA[
 				<ul>
-				<li>Code optimizations and dialog frame will now be smaller if a small set of results are returned.</li>
+				<li>Update to make the result window a floating panel, highlight for current selection, and artboard name.</li>
 				</ul>
 				]]>
 			</description>
-			<enclosure url="https://github.com/sonburn/symbol-instance-locator/archive/master.zip" sparkle:version="1.1" />
+			<enclosure url="https://github.com/sonburn/symbol-instance-locator/archive/master.zip" sparkle:version="1.2" />
 		</item>
 	</channel>
 </rss>

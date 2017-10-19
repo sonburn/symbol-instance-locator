@@ -1,4 +1,5 @@
 var strPluginName = "Symbol Instance Locator";
+var uiButtons = [];
 
 var onRun = function(context) {
 	var selection = context.selection;
@@ -24,21 +25,54 @@ var onRun = function(context) {
 		}
 
 		if (symbolInstances.length > 0) {
-			var alertWindow = COSAlertWindow.new();
+			var instancePanelWidth = 350,
+				instancePanelHeight = 492,
+				instancePanelTitle = 44,
+				instancePanelContentHeight = instancePanelHeight-instancePanelTitle;
 
-			alertWindow.setIcon(NSImage.alloc().initByReferencingFile(context.plugin.urlForResourceNamed("icon.png").path()));
-			alertWindow.setMessageText(strPluginName);
+			var instancePanel = NSPanel.alloc().init();
+			instancePanel.setFrame_display(NSMakeRect(0,0,instancePanelWidth,instancePanelHeight),true);
+			instancePanel.setStyleMask(NSTexturedBackgroundWindowMask | NSTitledWindowMask | NSClosableWindowMask | NSFullSizeContentViewWindowMask);
+			instancePanel.setBackgroundColor(NSColor.controlColor());
+			instancePanel.setLevel(NSFloatingWindowLevel);
+			instancePanel.standardWindowButton(NSWindowMiniaturizeButton).setHidden(true);
+			instancePanel.standardWindowButton(NSWindowZoomButton).setHidden(true);
+			instancePanel.makeKeyAndOrderFront(null);
+			instancePanel.center();
+			instancePanel.title = strPluginName;
 
-			alertWindow.addTextLabelWithValue(symbolMaster.name() + " has " + symbolInstances.length + " instance(s).");
+			COScript.currentCOScript().setShouldKeepAround_(true);
 
-			alertWindow.addTextLabelWithValue("Select an instance to navigate to it's location.");
+			var closeButton = instancePanel.standardWindowButton(NSWindowCloseButton);
+			closeButton.setCOSJSTargetFunction(function(sender) {
+				instancePanel.close();
+				threadDictionary.removeObjectForKey(identifier);
+				COScript.currentCOScript().setShouldKeepAround_(false);
+			});
 
-			var instanceItemHeight = 60,
-				instanceItemWidth = 286,
+			var threadDictionary = NSThread.mainThread().threadDictionary(),
+				identifier = "com.sonburn.sketchplugins.symbol-instance-locator";
+
+			if (threadDictionary[identifier]) return;
+
+			threadDictionary[identifier] = instancePanel;
+
+			var instancePanelContent = NSView.alloc().initWithFrame(NSMakeRect(0,0,instancePanelWidth,instancePanelContentHeight));
+			instancePanelContent.setFlipped(1);
+
+			var matchText = createBoldDescription(symbolMaster.name() + " has " + symbolInstances.length + " instance(s).",12,NSMakeRect(8,12,instancePanelWidth-16,16));
+			instancePanelContent.addSubview(matchText);
+
+			var selectText = createDescription("Select an instance below to navigate to it's location...",12,NSMakeRect(8,34,instancePanelWidth-16,16));
+			instancePanelContent.addSubview(selectText);
+
+			var gutterWidth = 15,
+				instanceItemHeight = 96,
+				instanceItemWidth = instancePanelWidth - gutterWidth,
 				instanceFrameInnerHeight = instanceItemHeight * (symbolInstances.length),
-				instanceFrameMaxHeight = 300,
+				instanceFrameMaxHeight = 384,
 				instanceFrameHeight = (instanceFrameInnerHeight < instanceFrameMaxHeight) ? instanceFrameInnerHeight : instanceFrameMaxHeight,
-				instanceFrame = NSScrollView.alloc().initWithFrame(NSMakeRect(0,0,300,instanceFrameHeight)),
+				instanceFrame = NSScrollView.alloc().initWithFrame(NSMakeRect(0,64,instancePanelWidth,instanceFrameHeight)),
 				instanceFrameSize = instanceFrame.contentSize(),
 				instanceFrameInner = NSView.alloc().initWithFrame(NSMakeRect(0,0,instanceFrameSize.width,instanceFrameInnerHeight)),
 				count = 0;
@@ -52,11 +86,8 @@ var onRun = function(context) {
 				count++;
 			}
 
-			alertWindow.addAccessoryView(instanceFrame);
-
-			alertWindow.addButtonWithTitle("Close");
-
-			alertWindow.runModal();
+			instancePanelContent.addSubview(instanceFrame);
+			instancePanel.contentView().addSubview(instancePanelContent);
 		} else {
 			displayDialog(symbolMaster.name() + " has no instances.",strPluginName);
 		}
@@ -71,16 +102,19 @@ function displayDialog(message,title) {
 
 function createListItem(instance,frame) {
 	var listItem = NSView.alloc().initWithFrame(frame),
-		rightColWidth = 120,
-		leftColWidth = frame.size.width-rightColWidth;
+		rightColWidth = 140,
+		leftColWidth = frame.size.width-rightColWidth,
+		leftPad = 8;
 
 	listItem.setFlipped(1);
-	listItem.addSubview(createTextLabel("Page Name",NSMakeRect(4,2,leftColWidth,14)));
-	listItem.addSubview(createTextField(instance.parentPage().name(),NSMakeRect(4,15,leftColWidth,18)));
-	listItem.addSubview(createTextLabel("Instance Name",NSMakeRect(4,29,leftColWidth,14)));
-	listItem.addSubview(createTextField(instance.name(),NSMakeRect(4,42,leftColWidth,18)));
+	listItem.addSubview(createTextLabel("Page",NSMakeRect(leftPad,6,leftColWidth,14)));
+	listItem.addSubview(createTextField(instance.parentPage().name(),NSMakeRect(leftPad,18,leftColWidth,18)));
+	listItem.addSubview(createTextLabel("Artboard",NSMakeRect(leftPad,34,leftColWidth,14)));
+	listItem.addSubview(createTextField((instance.parentArtboard()) ? instance.parentArtboard().name() : "None",NSMakeRect(leftPad,46,leftColWidth,18)));
+	listItem.addSubview(createTextLabel("Instance",NSMakeRect(leftPad,62,leftColWidth,14)));
+	listItem.addSubview(createTextField(instance.name(),NSMakeRect(leftPad,74,leftColWidth,18)));
 	listItem.addSubview(createImageArea(instance,NSMakeRect(leftColWidth,0,rightColWidth,frame.size.height)));
-	listItem.addSubview(createDivider(NSMakeRect(0,59,frame.size.width,1)));
+	listItem.addSubview(createDivider(NSMakeRect(0,frame.size.height-1,frame.size.width,1)));
 	listItem.addSubview(createTargetArea(instance,NSMakeRect(0,0,frame.size.width,frame.size.height)));
 
 	return listItem;
@@ -90,7 +124,7 @@ function createTextLabel(string,frame) {
 	var textLabel = NSTextField.alloc().initWithFrame(frame);
 
 	textLabel.setStringValue(string);
-	textLabel.setFont(NSFont.boldSystemFontOfSize(10));
+	textLabel.setFont(NSFont.systemFontOfSize(9));
 	textLabel.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,0.4));
 	textLabel.setBezeled(0);
 	textLabel.setEditable(0);
@@ -105,6 +139,7 @@ function createTextField(string,frame) {
 	textField.setFont(NSFont.systemFontOfSize(11));
 	textField.setBezeled(0);
 	textField.setEditable(0);
+	textField.setSelectable(1);
 
 	return textField;
 }
@@ -124,7 +159,7 @@ function createImageArea(instance,frame) {
 	imageArea.setTitle("");
 	imageArea.setBordered(0);
 	imageArea.setWantsLayer(1);
-	imageArea.layer().setBackgroundColor(CGColorCreateGenericRGB(241/255,241/255,241/255,1.0));
+	imageArea.layer().setBackgroundColor(CGColorCreateGenericRGB(248/255,248/255,248/255,1.0));
 
 	var exportRequest = MSExportRequest.exportRequestsFromExportableLayer_inRect_useIDForName_(
 		instance,
@@ -154,10 +189,19 @@ function createImageArea(instance,frame) {
 function createTargetArea(instance,frame) {
 	var targetArea = NSButton.alloc().initWithFrame(frame);
 
+	uiButtons.push(targetArea);
+
+	targetArea.addCursorRect_cursor(targetArea.frame(),NSCursor.pointingHandCursor());
 	targetArea.setTransparent(1);
 	targetArea.setAction("callAction:");
 	targetArea.setCOSJSTargetFunction(function(sender) {
-		NSApp.stopModalWithCode(NSOKButton);
+		for (var i = 0; i < uiButtons.length; i++) {
+			if (uiButtons[i].layer()) uiButtons[i].layer().setBorderWidth(0);
+		}
+
+		sender.setWantsLayer(1);
+		sender.layer().setBorderWidth(2);
+		sender.layer().setBorderColor(CGColorCreateGenericRGB(0,0,1,1));
 
 		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.absoluteRect().rect();
 
@@ -168,4 +212,34 @@ function createTargetArea(instance,frame) {
 	});
 
 	return targetArea;
+}
+
+function createDescription(text,size,frame,alpha) {
+	var label = NSTextField.alloc().initWithFrame(frame),
+		alpha = (alpha) ? alpha : 1.0;
+
+	label.setStringValue(text);
+	label.setFont(NSFont.systemFontOfSize(size));
+	label.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,alpha));
+	label.setBezeled(false);
+	label.setDrawsBackground(false);
+	label.setEditable(false);
+	label.setSelectable(false);
+
+	return label;
+}
+
+function createBoldDescription(text,size,frame,alpha) {
+	var label = NSTextField.alloc().initWithFrame(frame),
+		alpha = (alpha) ? alpha : 1.0;
+
+	label.setStringValue(text);
+	label.setFont(NSFont.boldSystemFontOfSize(size));
+	label.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,alpha));
+	label.setBezeled(false);
+	label.setDrawsBackground(false);
+	label.setEditable(false);
+	label.setSelectable(false);
+
+	return label;
 }
