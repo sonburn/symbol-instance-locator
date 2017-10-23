@@ -26,7 +26,7 @@ var onRun = function(context) {
 
 		if (symbolInstances.length > 0) {
 			var instancePanelWidth = 350,
-				instancePanelHeight = 492,
+				instancePanelHeight = 492 + 38, // 38 is for the button panel
 				instancePanelTitle = 44,
 				instancePanelContentHeight = instancePanelHeight-instancePanelTitle;
 
@@ -65,6 +65,41 @@ var onRun = function(context) {
 
 			var selectText = createDescription("Select an instance below to navigate to it's location...",12,NSMakeRect(8,34,instancePanelWidth-16,16));
 			instancePanelContent.addSubview(selectText);
+
+			var selectAllButton = NSButton.alloc().initWithFrame(NSMakeRect(0,450,130,36));
+			selectAllButton.setTitle("Select All on Page");
+			selectAllButton.setBezelStyle(NSRoundedBezelStyle);
+			selectAllButton.setAction("callAction:");
+			selectAllButton.setCOSJSTargetFunction(function(sender) {
+				var scrolled = false;
+
+				for (var i = 0; i < uiButtons.length; i++) {
+					if (uiButtons[i].layer()) uiButtons[i].layer().setBorderWidth(0);
+				}
+
+				context.document.currentPage().changeSelectionBySelectingLayers(nil);
+
+				var predicate = NSPredicate.predicateWithFormat("symbolMaster == %@",symbolMaster),
+					pageInstances = context.document.currentPage().children().filteredArrayUsingPredicate(predicate),
+					pageInstanceLoop = pageInstances.objectEnumerator(),
+					pageInstance;
+
+				while (pageInstance = pageInstanceLoop.nextObject()) {
+					pageInstance.select_byExpandingSelection(true,true);
+
+					var buttonToSelect = symbolInstances.findIndex(o => o === pageInstance);
+
+					uiButtons[buttonToSelect].setWantsLayer(1);
+					uiButtons[buttonToSelect].layer().setBorderWidth(2);
+					uiButtons[buttonToSelect].layer().setBorderColor(CGColorCreateGenericRGB(0,0,1,1));
+
+					if (scrolled == false) {
+						instanceFrameInner.scrollPoint(NSMakePoint(0,96*buttonToSelect));
+						scrolled = true;
+					}
+				}
+			});
+			instancePanelContent.addSubview(selectAllButton);
 
 			var gutterWidth = 15,
 				instanceItemHeight = 96,
@@ -108,11 +143,11 @@ function createListItem(instance,frame) {
 
 	listItem.setFlipped(1);
 	listItem.addSubview(createTextLabel("Page",NSMakeRect(leftPad,6,leftColWidth,14)));
-	listItem.addSubview(createTextField(instance.parentPage().name(),NSMakeRect(leftPad,18,leftColWidth,18)));
+	listItem.addSubview(createTextField(instance.parentPage().name(),NSMakeRect(leftPad,18,leftColWidth-leftPad,18)));
 	listItem.addSubview(createTextLabel("Artboard",NSMakeRect(leftPad,34,leftColWidth,14)));
-	listItem.addSubview(createTextField((instance.parentArtboard()) ? instance.parentArtboard().name() : "None",NSMakeRect(leftPad,46,leftColWidth,18)));
+	listItem.addSubview(createTextField((instance.parentArtboard()) ? instance.parentArtboard().name() : "None",NSMakeRect(leftPad,46,leftColWidth-leftPad,18)));
 	listItem.addSubview(createTextLabel("Instance",NSMakeRect(leftPad,62,leftColWidth,14)));
-	listItem.addSubview(createTextField(instance.name(),NSMakeRect(leftPad,74,leftColWidth,18)));
+	listItem.addSubview(createTextField(instance.name(),NSMakeRect(leftPad,74,leftColWidth-leftPad,18)));
 	listItem.addSubview(createImageArea(instance,NSMakeRect(leftColWidth,0,rightColWidth,frame.size.height)));
 	listItem.addSubview(createDivider(NSMakeRect(0,frame.size.height-1,frame.size.width,1)));
 	listItem.addSubview(createTargetArea(instance,NSMakeRect(0,0,frame.size.width,frame.size.height)));
@@ -139,7 +174,7 @@ function createTextField(string,frame) {
 	textField.setFont(NSFont.systemFontOfSize(11));
 	textField.setBezeled(0);
 	textField.setEditable(0);
-	textField.setSelectable(1);
+	textField.setLineBreakMode(NSLineBreakByTruncatingTail);
 
 	return textField;
 }
