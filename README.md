@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.4** - Improved handling for long symbol master names, added button to select master (if it resides in current document).
 * **1.3** - Added button to select all matches on current page, updated plugin screenshot.
 * **1.2** - Update to make the result window a floating panel, highlight for current selection, and artboard name.
 * **1.1** - Code optimizations and dialog frame will now be smaller if a small set of results are returned.

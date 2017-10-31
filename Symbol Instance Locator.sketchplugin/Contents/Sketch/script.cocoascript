@@ -60,7 +60,7 @@ var onRun = function(context) {
 			var instancePanelContent = NSView.alloc().initWithFrame(NSMakeRect(0,0,instancePanelWidth,instancePanelContentHeight));
 			instancePanelContent.setFlipped(1);
 
-			var matchText = createBoldDescription(symbolMaster.name() + " has " + symbolInstances.length + " instance(s).",12,NSMakeRect(8,12,instancePanelWidth-16,16));
+			var matchText = createBoldDescription(truncateString(String(symbolMaster.name()),30) + " has " + symbolInstances.length + " instance(s).",12,NSMakeRect(8,12,instancePanelWidth-16,16));
 			instancePanelContent.addSubview(matchText);
 
 			var selectText = createDescription("Select an instance below to navigate to it's location...",12,NSMakeRect(8,34,instancePanelWidth-16,16));
@@ -87,7 +87,7 @@ var onRun = function(context) {
 				while (pageInstance = pageInstanceLoop.nextObject()) {
 					pageInstance.select_byExpandingSelection(true,true);
 
-					var buttonToSelect = symbolInstances.findIndex(o => o === pageInstance);
+					var buttonToSelect = symbolInstances.findIndex(o => o == pageInstance);
 
 					uiButtons[buttonToSelect].setWantsLayer(1);
 					uiButtons[buttonToSelect].layer().setBorderWidth(2);
@@ -100,6 +100,33 @@ var onRun = function(context) {
 				}
 			});
 			instancePanelContent.addSubview(selectAllButton);
+
+			var selectMasterButton = NSButton.alloc().initWithFrame(NSMakeRect(130,450,100,36));
+			selectMasterButton.setTitle("Go to Master");
+			selectMasterButton.setBezelStyle(NSRoundedBezelStyle);
+			selectMasterButton.setEnabled(context.document.pages().containsObject(symbolMaster.parentPage()));
+			selectMasterButton.setAction("callAction:");
+			selectMasterButton.setCOSJSTargetFunction(function(sender) {
+				for (var i = 0; i < uiButtons.length; i++) {
+					if (uiButtons[i].layer()) uiButtons[i].layer().setBorderWidth(0);
+				}
+
+				context.document.currentPage().changeSelectionBySelectingLayers(nil);
+
+				var rect = symbolMaster.absoluteRect().rect();
+
+				MSDocument.currentDocument().setCurrentPage(symbolMaster.parentPage());
+				MSDocument.currentDocument().currentView().zoomToFitRect(rect);
+
+				symbolMaster.select_byExpandingSelection(true,false);
+			});
+			instancePanelContent.addSubview(selectMasterButton);
+
+			// var refreshButton = NSButton.alloc().initWithFrame(NSMakeRect(230,450,120,36));
+			// refreshButton.setTitle("Refresh Results");
+			// refreshButton.setBezelStyle(NSRoundedBezelStyle);
+			// refreshButton.setEnabled(0);
+			// instancePanelContent.addSubview(refreshButton);
 
 			var gutterWidth = 15,
 				instanceItemHeight = 96,
@@ -278,3 +305,7 @@ function createBoldDescription(text,size,frame,alpha) {
 
 	return label;
 }
+
+function truncateString(string,length) {
+	return (string.length <= length) ? string : "…" + string.substr(string.length-length);
+};
