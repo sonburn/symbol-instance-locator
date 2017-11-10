@@ -6,15 +6,15 @@
 		<description>Locate all instances of a selected symbol or instance.</description>
 		<language>en</language>
 		<item>
-			<title>Version 1.4</title>
+			<title>Version 1.5</title>
 			<description>
 				<![CDATA[
 				<ul>
-				<li>Improved handling for long symbol master names, added button to select master (if it resides in current document).</li>
+				<li>Added support for overrides.</li>
 				</ul>
 				]]>
 			</description>
-			<enclosure url="https://github.com/sonburn/symbol-instance-locator/archive/master.zip" sparkle:version="1.4" />
+			<enclosure url="https://github.com/sonburn/symbol-instance-locator/archive/master.zip" sparkle:version="1.5" />
 		</item>
 	</channel>
 </rss>
