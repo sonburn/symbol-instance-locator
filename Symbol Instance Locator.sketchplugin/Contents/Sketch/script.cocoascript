@@ -2,6 +2,11 @@ var strPluginName = "Symbol Instance Locator";
 
 var uiButtons = [];
 
+var instancePanelWidth = 350,
+	instancePanelHeight = 492 + 38 + 30, // 38 is for the button panel, 30 is for segmented control
+	instancePanelTitle = 44,
+	gutterWidth = 15;
+
 var onRun = function(context) {
 	var selection = context.selection;
 
@@ -9,17 +14,12 @@ var onRun = function(context) {
 		var symbol = selection[0],
 			symbolMaster = (symbol instanceof MSSymbolMaster) ? symbol : symbol.symbolMaster(),
 			symbolInstances = getSymbolInstances(context,symbolMaster),
-			symbolOverrides = getSymbolOverrides(context,symbolMaster);
+			symbolOverrides = getSymbolOverrides(context,symbolMaster),
+			instances = symbolInstances;
 
-		if (symbolInstances.length > 0) {
-			var instancePanelWidth = 350,
-				instancePanelHeight = 492 + 38 + 30, // 38 is for the button panel, 30 is for segmented control
-				instancePanelTitle = 44,
-				instancePanelContentHeight = instancePanelHeight-instancePanelTitle,
-				gutterWidth = 15,
-				instanceItemHeight = 96,
-				instanceItemWidth = instancePanelWidth - gutterWidth;
-
+		if (symbolInstances.length == 0 && symbolOverrides.length == 0) {
+			displayDialog(symbolMaster.name() + " has no instances or overrides.",strPluginName);
+		} else {
 			var instancePanel = NSPanel.alloc().init();
 			instancePanel.setFrame_display(NSMakeRect(0,0,instancePanelWidth,instancePanelHeight),true);
 			instancePanel.setStyleMask(NSTexturedBackgroundWindowMask | NSTitledWindowMask | NSClosableWindowMask | NSFullSizeContentViewWindowMask);
@@ -47,49 +47,24 @@ var onRun = function(context) {
 
 			threadDictionary[identifier] = instancePanel;
 
-			var instancePanelContent = NSView.alloc().initWithFrame(NSMakeRect(0,0,instancePanelWidth,instancePanelContentHeight));
+			var instancePanelContent = NSView.alloc().initWithFrame(NSMakeRect(0,0,instancePanelWidth,instancePanelHeight-instancePanelTitle));
+
 			instancePanelContent.setFlipped(1);
 
 			var matchType = createSegmentedControl(["Instances (" + symbolInstances.length + ")","Overrides (" + symbolOverrides.length + ")"],NSMakeRect(52,34,300,24));
+
 			instancePanelContent.addSubview(matchType);
 
-			if (!symbolOverrides.length) {
-				matchType.setEnabled_forSegment(0,1);
-			} else {
-				matchType.cell().setAction("callAction:");
-				matchType.cell().setCOSJSTargetFunction(function(sender) {
-					var source = (sender.indexOfSelectedItem() == 0) ? symbolInstances : symbolOverrides,
-						count = 0;
-
-					var subviews = instanceFrameInner.subviews();
-
-					for (var i = subviews.length - 1; i >= 0; --i) {
-						subviews[i].removeFromSuperview();
-					}
-
-					uiButtons = [];
-
-					for (var i = 0; i < source.length; i++) {
-						instanceFrameInner.addSubview(createListItem(source[i],NSMakeRect(0,instanceItemHeight*count,instanceItemWidth,instanceItemHeight)));
-						count++;
-					}
-
-					var instanceFrameInnerHeight = instanceItemHeight * source.length,
-						instanceFrameMaxHeight = 384,
-						instanceFrameHeight = (instanceFrameInnerHeight < instanceFrameMaxHeight) ? instanceFrameInnerHeight : instanceFrameMaxHeight;
-
-					instanceFrame.frame = NSMakeRect(0,64+30,instancePanelWidth,instanceFrameHeight);
-					instanceFrameInner.frame = NSMakeRect(0,0,instanceFrameSize.width,instanceFrameInnerHeight);
-				});
-			}
-
 			var matchText = createBoldDescription(String(symbolMaster.name()),12,NSMakeRect(8,12,instancePanelWidth-16,16));
+
 			instancePanelContent.addSubview(matchText);
 
-			var selectText = createDescription("Select an instance below to navigate to it's location...",12,NSMakeRect(8,34+30,instancePanelWidth-16,16));
+			var selectText = createDescription("Select an instance below to navigate to it's location...",12,NSMakeRect(8,64,instancePanelWidth-16,16));
+
 			instancePanelContent.addSubview(selectText);
 
-			var selectAllButton = NSButton.alloc().initWithFrame(NSMakeRect(0,450+30,130,36));
+			var selectAllButton = NSButton.alloc().initWithFrame(NSMakeRect(0,480,130,36));
+
 			selectAllButton.setTitle("Select All on Page");
 			selectAllButton.setBezelStyle(NSRoundedBezelStyle);
 			selectAllButton.setAction("callAction:");
@@ -116,14 +91,16 @@ var onRun = function(context) {
 					uiButtons[buttonToSelect].layer().setBorderColor(CGColorCreateGenericRGB(0,0,1,1));
 
 					if (scrolled == false) {
-						instanceFrameInner.scrollPoint(NSMakePoint(0,96*buttonToSelect));
+						instanceFrame.subviews().firstObject().scrollPoint(NSMakePoint(0,96*buttonToSelect));
 						scrolled = true;
 					}
 				}
 			});
+
 			instancePanelContent.addSubview(selectAllButton);
 
-			var selectMasterButton = NSButton.alloc().initWithFrame(NSMakeRect(130,450+30,100,36));
+			var selectMasterButton = NSButton.alloc().initWithFrame(NSMakeRect(130,480,100,36));
+
 			selectMasterButton.setTitle("Go to Master");
 			selectMasterButton.setBezelStyle(NSRoundedBezelStyle);
 			selectMasterButton.setEnabled(context.document.pages().containsObject(symbolMaster.parentPage()));
@@ -140,6 +117,7 @@ var onRun = function(context) {
 
 				symbolMaster.select_byExpandingSelection(true,false);
 			});
+
 			instancePanelContent.addSubview(selectMasterButton);
 
 			// var refreshButton = NSButton.alloc().initWithFrame(NSMakeRect(230,450,120,36));
@@ -148,31 +126,57 @@ var onRun = function(context) {
 			// refreshButton.setEnabled(0);
 			// instancePanelContent.addSubview(refreshButton);
 
-			var instanceFrameInnerHeight = instanceItemHeight * (symbolInstances.length),
-				instanceFrameMaxHeight = 384,
-				instanceFrameHeight = (instanceFrameInnerHeight < instanceFrameMaxHeight) ? instanceFrameInnerHeight : instanceFrameMaxHeight,
-				instanceFrame = NSScrollView.alloc().initWithFrame(NSMakeRect(0,64+30,instancePanelWidth,instanceFrameHeight)),
-				instanceFrameSize = instanceFrame.contentSize(),
-				instanceFrameInner = NSView.alloc().initWithFrame(NSMakeRect(0,0,instanceFrameSize.width,instanceFrameInnerHeight)),
-				count = 0;
+			var instanceFrame = NSScrollView.alloc().initWithFrame(NSMakeRect(0,94,instancePanelWidth,384));
 
-			instanceFrameInner.setFlipped(true);
 			instanceFrame.setHasVerticalScroller(true);
-			instanceFrame.setDocumentView(instanceFrameInner);
-
-			for (var i = 0; i < symbolInstances.length; i++) {
-				instanceFrameInner.addSubview(createListItem(symbolInstances[i],NSMakeRect(0,instanceItemHeight*count,instanceItemWidth,instanceItemHeight)));
-				count++;
-			}
 
 			instancePanelContent.addSubview(instanceFrame);
+
+			if (!symbolOverrides.length) {
+				matchType.setEnabled_forSegment(0,1);
+				matchType.setSelected_forSegment(1,0);
+			} else if (!symbolInstances.length) {
+				matchType.setEnabled_forSegment(0,0);
+				matchType.setSelected_forSegment(1,1);
+
+				instances = symbolOverrides;
+			} else {
+				matchType.cell().setAction("callAction:");
+				matchType.cell().setCOSJSTargetFunction(function(sender) {
+					instances = (sender.indexOfSelectedItem() == 0) ? symbolInstances : symbolOverrides;
+
+					displayInstances(instanceFrame,instances);
+				});
+			}
+
+			displayInstances(instanceFrame,instances);
+
 			instancePanel.contentView().addSubview(instancePanelContent);
-		} else {
-			displayDialog(symbolMaster.name() + " has no instances or overrides.",strPluginName);
 		}
 	} else {
 		displayDialog("Select one symbol master or instance.",strPluginName);
 	}
+}
+
+function displayInstances(parent,instances) {
+	uiButtons = [];
+
+	var instanceHeight = 96,
+		instanceWidth = instancePanelWidth - gutterWidth,
+		instanceContent = NSView.alloc().initWithFrame(NSMakeRect(0,0,instanceWidth,instanceHeight*instances.length)),
+		count = 0;
+
+	instanceContent.setFlipped(true);
+
+	for (var i = 0; i < instances.length; i++) {
+		var instance = createListItem(instances[i],NSMakeRect(0,instanceHeight*count,instanceWidth,instanceHeight));
+
+		instanceContent.addSubview(instance);
+
+		count++;
+	}
+
+	parent.setDocumentView(instanceContent);
 }
 
 function getSymbolInstances(context,symbolMaster) {
@@ -394,10 +398,6 @@ function createBoldDescription(text,size,frame,alpha) {
 	label.setSelectable(false);
 
 	return label;
-}
-
-function truncateString(string,length) {
-	return (string.length <= length) ? string : "…" + string.substr(string.length-length);
 }
 
 function createSegmentedControl(items,frame) {
