@@ -33,19 +33,20 @@ var onRun = function(context) {
 
 			COScript.currentCOScript().setShouldKeepAround_(true);
 
-			var closeButton = instancePanel.standardWindowButton(NSWindowCloseButton);
-			closeButton.setCOSJSTargetFunction(function(sender) {
-				instancePanel.close();
-				threadDictionary.removeObjectForKey(identifier);
-				COScript.currentCOScript().setShouldKeepAround_(false);
-			});
-
 			var threadDictionary = NSThread.mainThread().threadDictionary(),
 				identifier = "com.sonburn.sketchplugins.symbol-instance-locator";
 
 			if (threadDictionary[identifier]) return;
 
 			threadDictionary[identifier] = instancePanel;
+
+			var closeButton = instancePanel.standardWindowButton(NSWindowCloseButton);
+
+			closeButton.setCOSJSTargetFunction(function(sender) {
+				instancePanel.close();
+				threadDictionary.removeObjectForKey(identifier);
+				COScript.currentCOScript().setShouldKeepAround_(false);
+			});
 
 			var instancePanelContent = NSView.alloc().initWithFrame(NSMakeRect(0,0,instancePanelWidth,instancePanelHeight-instancePanelTitle));
 
@@ -113,7 +114,7 @@ var onRun = function(context) {
 				var rect = symbolMaster.absoluteRect().rect();
 
 				MSDocument.currentDocument().setCurrentPage(symbolMaster.parentPage());
-				MSDocument.currentDocument().currentView().zoomToFitRect(rect);
+				MSDocument.currentDocument().contentDrawView().zoomToFitRect(rect);
 
 				symbolMaster.select_byExpandingSelection(true,false);
 			});
@@ -353,7 +354,7 @@ function createTargetArea(instance,frame) {
 		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.absoluteRect().rect();
 
 		MSDocument.currentDocument().setCurrentPage(instance.parentPage());
-		MSDocument.currentDocument().currentView().zoomToFitRect(rect);
+		MSDocument.currentDocument().contentDrawView().zoomToFitRect(rect);
 
 		instance.select_byExpandingSelection(true,false);
 	});

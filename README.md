@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.7** - Fix for Sketch 48 change of currentView to contentDrawView.
 * **1.6** - Improved handling when selection has overrides but no instances.
 * **1.5** - Added support for overrides.
 * **1.4** - Improved handling for long symbol master names, added button to select master (if it resides in current document).
