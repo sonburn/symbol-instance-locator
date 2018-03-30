@@ -85,7 +85,7 @@ var onRun = function(context) {
 				while (pageInstance = pageInstanceLoop.nextObject()) {
 					pageInstance.select_byExpandingSelection(true,true);
 
-					var buttonToSelect = symbolType.findIndex(o => o == pageInstance);
+					var buttonToSelect = symbolType.indexOfObject(pageInstance);
 
 					uiButtons[buttonToSelect].setWantsLayer(1);
 					uiButtons[buttonToSelect].layer().setBorderWidth(2);

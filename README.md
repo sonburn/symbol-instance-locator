@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.8** - Fix for plugin not working in El Capitan and updated years.
 * **1.7** - Fix for Sketch 48 change of currentView to contentDrawView.
 * **1.6** - Improved handling when selection has overrides but no instances.
 * **1.5** - Added support for overrides.
@@ -61,4 +62,4 @@ If you find this plugin helpful, consider shouting me ☕️ via <a href="https:
 
 # License
 
-Copyright (c) 2017 Jason Burns (Sonburn). See LICENSE.md for further details.
+Copyright (c) 2018 Jason Burns (Sonburn). See LICENSE.md for further details.
