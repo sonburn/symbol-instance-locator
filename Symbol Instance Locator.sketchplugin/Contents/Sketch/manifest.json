@@ -4,21 +4,36 @@
 		{
 			"name" : "Symbol Instance Locator",
 			"shortcut" : "cmd option shift l",
-			"identifier" : "instanceLocator",
+			"identifier" : "locate",
 			"description" : "Locate instances of the selected symbol or instance.",
 			"script" : "script.cocoascript",
-			"icon" : "icon-sr.png"
+			"icon" : "icon-sr.png",
+			"handler" : "locate"
+		},
+		{
+			"name": "Report Issue",
+			"identifier": "report",
+			"script" : "script.cocoascript",
+			"handler": "report"
+		},
+		{
+			"name": "Donate",
+			"identifier": "donate",
+			"script" : "script.cocoascript",
+			"handler": "donate"
 		}
 	],
 	"menu" : {
 		"title" : "Symbol Instance Locator",
 		"items" : [
-			"instanceLocator"
-		],
-		"isRoot" : true
+			"locate",
+			"-",
+			"report",
+			"donate"
+		]
 	},
 	"identifier" : "com.sonburn.sketchplugins.symbol-instance-locator",
-	"version" : "1.9",
+	"version" : "1.10",
 	"description" : "Locate all instances of a selected symbol or instance.",
 	"authorEmail" : "jason.burns@synchronoss.com",
 	"name" : "Symbol Instance Locator",

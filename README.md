@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.10** - General optimizations.
 * **1.9** - Added plugin icon to manifest for Sketch 50.
 * **1.8** - Fix for plugin not working in El Capitan and updated years.
 * **1.7** - Fix for Sketch 48 change of currentView to contentDrawView.

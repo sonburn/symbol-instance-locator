@@ -6,15 +6,15 @@
 		<description>Locate all instances of a selected symbol or instance.</description>
 		<language>en</language>
 		<item>
-			<title>Version 1.9</title>
+			<title>Version 1.10</title>
 			<description>
 				<![CDATA[
 				<ul>
-				<li>Added plugin icon to manifest for Sketch 50.</li>
+				<li>General optimizations.</li>
 				</ul>
 				]]>
 			</description>
-			<enclosure url="https://github.com/sonburn/symbol-instance-locator/archive/master.zip" sparkle:version="1.9" />
+			<enclosure url="https://github.com/sonburn/symbol-instance-locator/archive/master.zip" sparkle:version="1.10" />
 		</item>
 	</channel>
 </rss>
