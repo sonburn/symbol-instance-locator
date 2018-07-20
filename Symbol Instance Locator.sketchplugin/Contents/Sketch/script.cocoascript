@@ -168,6 +168,12 @@ var report = function(context) {
 	if (!debugMode) googleAnalytics(context,"report","report");
 }
 
+var plugins = function(context) {
+	openUrl("https://sonburn.github.io/");
+
+	if (!debugMode) googleAnalytics(context,"plugins","plugins");
+}
+
 var donate = function(context) {
 	openUrl("https://www.paypal.me/sonburn");
 
@@ -409,23 +415,34 @@ function getSymbolOverrides(context,symbolMaster) {
 		page;
 
 	while (page = pageLoop.nextObject()) {
-		var predicate = NSPredicate.predicateWithFormat("className == %@ && overrides != nil","MSSymbolInstance"),
+		var predicate = NSPredicate.predicateWithFormat("className == %@ && overrideValues != nil","MSSymbolInstance"),
 			instances = page.children().filteredArrayUsingPredicate(predicate),
 			instanceLoop = instances.objectEnumerator(),
 			instance;
 
 		while (instance = instanceLoop.nextObject()) {
-			var overrides = instance.overrides();
+			var overrides = instance.availableOverrides(),
+				symbolMasterID = String(symbolMaster.symbolID());
 
-			for (var key in overrides) {
-				var value = String(overrides[key]["symbolID"]);
-
-				if (value == symbolMaster.symbolID()) {
-					if (findActiveOverrideKey(instance.symbolMaster(),key)) {
-						symbolOverrides.addObject(instance);
+			overrides.forEach(function(override) {
+				if (override.hasOverride()) {
+					if (String(override.overrideValue()) == symbolMasterID) {
+						if (!symbolOverrides.containsObject(instance)) {
+							symbolOverrides.addObject(instance);
+						}
+					} else {
+						if (override.children()) {
+							override.children().forEach(function(child) {
+								if (child.className() == "MSSymbolOverride" && String(child.overrideValue()) == symbolMasterID) {
+									if (!symbolOverrides.containsObject(instance)) {
+										symbolOverrides.addObject(instance);
+									}
+								}
+							});
+						}
 					}
 				}
-			}
+			});
 		}
 	}
 

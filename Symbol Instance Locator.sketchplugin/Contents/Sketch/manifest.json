@@ -17,6 +17,12 @@
 			"handler": "report"
 		},
 		{
+			"name": "Other Plugins",
+			"identifier": "plugins",
+			"script" : "script.cocoascript",
+			"handler": "plugins"
+		},
+		{
 			"name": "Donate",
 			"identifier": "donate",
 			"script" : "script.cocoascript",
@@ -29,11 +35,12 @@
 			"locate",
 			"-",
 			"report",
+			"plugins",
 			"donate"
 		]
 	},
 	"identifier" : "com.sonburn.sketchplugins.symbol-instance-locator",
-	"version" : "1.10",
+	"version" : "1.11",
 	"description" : "Locate all instances of a selected symbol or instance.",
 	"authorEmail" : "jason.burns@synchronoss.com",
 	"name" : "Symbol Instance Locator",
