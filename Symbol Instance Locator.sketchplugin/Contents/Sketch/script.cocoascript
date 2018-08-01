@@ -372,20 +372,6 @@ function displayInstances(parent,instances) {
 	parent.setDocumentView(instanceContent);
 }
 
-function findActiveOverrideKey(master,key) {
-	var masterOverrides = master.overridePoints(),
-		match = false;
-
-	for (var i = 0; i < masterOverrides.count(); i++) {
-		var override = String(masterOverrides[i]),
-			override = override.substr(0,override.indexOf("_"));
-
-		if (override == key) match = true;
-	}
-
-	return match;
-}
-
 function getSymbolInstances(context,symbolMaster) {
 	var symbolInstances = NSMutableArray.array();
 
@@ -421,28 +407,32 @@ function getSymbolOverrides(context,symbolMaster) {
 			instance;
 
 		while (instance = instanceLoop.nextObject()) {
-			var overrides = instance.availableOverrides(),
-				symbolMasterID = String(symbolMaster.symbolID());
+			if (instance.overrides()) {
+				var overrides = instance.availableOverrides(),
+					symbolMasterID = String(symbolMaster.symbolID());
 
-			overrides.forEach(function(override) {
-				if (override.hasOverride()) {
-					if (String(override.overrideValue()) == symbolMasterID) {
-						if (!symbolOverrides.containsObject(instance)) {
-							symbolOverrides.addObject(instance);
-						}
-					} else {
-						if (override.children()) {
-							override.children().forEach(function(child) {
-								if (child.className() == "MSSymbolOverride" && String(child.overrideValue()) == symbolMasterID) {
-									if (!symbolOverrides.containsObject(instance)) {
-										symbolOverrides.addObject(instance);
-									}
+				if (overrides) {
+					overrides.forEach(function(override) {
+						if (override.hasOverride()) {
+							if (String(override.overrideValue()) == symbolMasterID) {
+								if (!symbolOverrides.containsObject(instance)) {
+									symbolOverrides.addObject(instance);
 								}
-							});
+							} else {
+								if (override.children()) {
+									override.children().forEach(function(child) {
+										if (child.className() == "MSSymbolOverride" && String(child.overrideValue()) == symbolMasterID) {
+											if (!symbolOverrides.containsObject(instance)) {
+												symbolOverrides.addObject(instance);
+											}
+										}
+									});
+								}
+							}
 						}
-					}
+					});
 				}
-			});
+			}
 		}
 	}
 

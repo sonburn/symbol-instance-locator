@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.12** - Fix for "null is not an object (evaluating 'overrides.forEach')" issue.
 * **1.11** - Updated method used to locate symbols used as overrides.
 * **1.10** - General optimizations.
 * **1.9** - Added plugin icon to manifest for Sketch 50.
