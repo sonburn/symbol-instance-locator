@@ -45,5 +45,6 @@
 	"authorEmail" : "jason.burns@synchronoss.com",
 	"name" : "Symbol Instance Locator",
 	"icon" : "icon.png",
-	"appcast" : "https://raw.githubusercontent.com/sonburn/symbol-instance-locator/master/appcast.xml"
+	"appcast" : "https://raw.githubusercontent.com/sonburn/symbol-instance-locator/master/appcast.xml",
+	"homepage" : "https://github.com/sonburn/symbol-instance-locator"
 }
