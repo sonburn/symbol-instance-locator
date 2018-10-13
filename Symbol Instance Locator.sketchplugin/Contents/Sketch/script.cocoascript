@@ -3,7 +3,7 @@ var strPluginName = "Symbol Instance Locator",
 
 var uiButtons = [];
 
-var instancePanelWidth = 350,
+var instancePanelWidth = 500,
 	instancePanelHeight = 492 + 38 + 30, // 38 is for the button panel, 30 is for segmented control
 	instancePanelTitle = 44,
 	gutterWidth = 15;
