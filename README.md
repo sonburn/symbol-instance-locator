@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.13** - Fix for Sketch 53.
 * **1.12** - Fix for "null is not an object (evaluating 'overrides.forEach')" issue.
 * **1.11** - Updated method used to locate symbols used as overrides.
 * **1.10** - General optimizations.
@@ -66,4 +67,4 @@ If you find this plugin helpful, or would like to support my plugins in general,
 
 # License
 
-Copyright (c) 2018 Jason Burns (Sonburn). See LICENSE.md for further details.
+Copyright (c) 2019 Jason Burns (Sonburn). See LICENSE.md for further details.

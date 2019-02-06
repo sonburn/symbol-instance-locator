@@ -1,31 +1,37 @@
 {
+	"name" : "Symbol Instance Locator",
+	"description" : "Locate all instances of a selected symbol or instance.",
 	"author" : "Jason Burns",
+	"homepage" : "https://github.com/sonburn/symbol-instance-locator",
+	"version" : "1.13",
+	"identifier" : "com.sonburn.sketchplugins.symbol-instance-locator",
+	"appcast" : "https://raw.githubusercontent.com/sonburn/symbol-instance-locator/master/appcast.xml",
+	"icon" : "icon.png",
 	"commands" : [
 		{
 			"name" : "Symbol Instance Locator",
 			"shortcut" : "cmd option shift l",
 			"identifier" : "locate",
 			"description" : "Locate instances of the selected symbol or instance.",
-			"script" : "script.cocoascript",
-			"icon" : "icon-sr.png",
+			"script" : "script.js",
 			"handler" : "locate"
 		},
 		{
 			"name": "Report Issue",
 			"identifier": "report",
-			"script" : "script.cocoascript",
+			"script" : "script.js",
 			"handler": "report"
 		},
 		{
 			"name": "Other Plugins",
 			"identifier": "plugins",
-			"script" : "script.cocoascript",
+			"script" : "script.js",
 			"handler": "plugins"
 		},
 		{
 			"name": "Donate",
 			"identifier": "donate",
-			"script" : "script.cocoascript",
+			"script" : "script.js",
 			"handler": "donate"
 		}
 	],
@@ -38,13 +44,5 @@
 			"plugins",
 			"donate"
 		]
-	},
-	"identifier" : "com.sonburn.sketchplugins.symbol-instance-locator",
-	"version" : "1.12",
-	"description" : "Locate all instances of a selected symbol or instance.",
-	"authorEmail" : "jason.burns@synchronoss.com",
-	"name" : "Symbol Instance Locator",
-	"icon" : "icon.png",
-	"appcast" : "https://raw.githubusercontent.com/sonburn/symbol-instance-locator/master/appcast.xml",
-	"homepage" : "https://github.com/sonburn/symbol-instance-locator"
+	}
 }

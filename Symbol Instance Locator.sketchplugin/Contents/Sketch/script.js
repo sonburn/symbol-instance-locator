@@ -84,7 +84,7 @@ var locate = function(context) {
 					pageInstance;
 
 				while (pageInstance = pageInstanceLoop.nextObject()) {
-					pageInstance.select_byExpandingSelection(true,true);
+					pageInstance.select_byExtendingSelection(1,1);
 
 					var buttonToSelect = symbolType.indexOfObject(pageInstance);
 
@@ -117,7 +117,7 @@ var locate = function(context) {
 				MSDocument.currentDocument().setCurrentPage(symbolMaster.parentPage());
 				MSDocument.currentDocument().contentDrawView().zoomToFitRect(rect);
 
-				symbolMaster.select_byExpandingSelection(true,false);
+				symbolMaster.select_byExtendingSelection(1,1);
 			});
 
 			instancePanelContent.addSubview(selectMasterButton);
@@ -308,7 +308,7 @@ function createTargetArea(instance,frame) {
 		MSDocument.currentDocument().setCurrentPage(instance.parentPage());
 		MSDocument.currentDocument().contentDrawView().zoomToFitRect(rect);
 
-		instance.select_byExpandingSelection(true,false);
+		instance.select_byExtendingSelection(1,0);
 	});
 
 	return targetArea;
