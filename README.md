@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.14** - If instance master is in library, 'Go to Master' will now open the library. Override instances now show each instance and overridden layer name.
 * **1.13** - Fix for Sketch 53.
 * **1.12** - Fix for "null is not an object (evaluating 'overrides.forEach')" issue.
 * **1.11** - Updated method used to locate symbols used as overrides.

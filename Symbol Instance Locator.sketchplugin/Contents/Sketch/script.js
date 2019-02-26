@@ -1,192 +1,164 @@
-var strPluginName = "Symbol Instance Locator",
-	debugMode = false;
+const sketch = require('sketch');
+const document = sketch.getSelectedDocument();
+const selection = document.selectedLayers;
 
-var uiButtons = [];
+var pluginName = __command.pluginBundle().name();
+var debugMode = false;
 
-var instancePanelWidth = 350,
-	instancePanelHeight = 492 + 38 + 30, // 38 is for the button panel, 30 is for segmented control
-	instancePanelTitle = 44,
-	gutterWidth = 15;
+var panelHeader = 44;
+var panelFooter = 38;
+var panelHeight = panelHeader + 448 + panelFooter;
+var panelWidth = 350;
+var panelGutter = 15;
+var panelItems = [];
 
 var locate = function(context) {
-	var selection = context.selection;
-
-	if (selection.count() == 1 && (selection[0] instanceof MSSymbolMaster || selection[0] instanceof MSSymbolInstance)) {
-		var symbol = selection[0],
-			symbolMaster = (symbol instanceof MSSymbolMaster) ? symbol : symbol.symbolMaster(),
-			symbolInstances = getSymbolInstances(context,symbolMaster),
-			symbolOverrides = getSymbolOverrides(context,symbolMaster),
-			instances = symbolInstances;
-
-		if (symbolInstances.length == 0 && symbolOverrides.length == 0) {
-			displayDialog(symbolMaster.name() + " has no instances or overrides.",strPluginName);
-		} else {
-			var instancePanel = NSPanel.alloc().init();
-			instancePanel.setFrame_display(NSMakeRect(0,0,instancePanelWidth,instancePanelHeight),true);
-			instancePanel.setStyleMask(NSTexturedBackgroundWindowMask | NSTitledWindowMask | NSClosableWindowMask | NSFullSizeContentViewWindowMask);
-			instancePanel.setBackgroundColor(NSColor.controlColor());
-			instancePanel.setLevel(NSFloatingWindowLevel);
-			instancePanel.standardWindowButton(NSWindowMiniaturizeButton).setHidden(true);
-			instancePanel.standardWindowButton(NSWindowZoomButton).setHidden(true);
-			instancePanel.makeKeyAndOrderFront(null);
-			instancePanel.center();
-			instancePanel.title = strPluginName;
-
-			COScript.currentCOScript().setShouldKeepAround_(true);
-
-			var threadDictionary = NSThread.mainThread().threadDictionary(),
-				identifier = "com.sonburn.sketchplugins.symbol-instance-locator";
-
-			if (threadDictionary[identifier]) return;
-
-			threadDictionary[identifier] = instancePanel;
-
-			var closeButton = instancePanel.standardWindowButton(NSWindowCloseButton);
-
-			closeButton.setCOSJSTargetFunction(function(sender) {
-				instancePanel.close();
-				threadDictionary.removeObjectForKey(identifier);
-				COScript.currentCOScript().setShouldKeepAround_(false);
-			});
-
-			var instancePanelContent = NSView.alloc().initWithFrame(NSMakeRect(0,0,instancePanelWidth,instancePanelHeight-instancePanelTitle));
-
-			instancePanelContent.setFlipped(1);
-
-			var matchType = createSegmentedControl(["Instances (" + symbolInstances.length + ")","Overrides (" + symbolOverrides.length + ")"],NSMakeRect(52,34,300,24));
-
-			instancePanelContent.addSubview(matchType);
-
-			var matchText = createBoldDescription(String(symbolMaster.name()),12,NSMakeRect(8,12,instancePanelWidth-16,16));
-
-			instancePanelContent.addSubview(matchText);
-
-			var selectText = createDescription("Select an instance below to navigate to it's location...",12,NSMakeRect(8,64,instancePanelWidth-16,16));
-
-			instancePanelContent.addSubview(selectText);
-
-			var selectAllButton = NSButton.alloc().initWithFrame(NSMakeRect(0,480,130,36));
-
-			selectAllButton.setTitle("Select All on Page");
-			selectAllButton.setBezelStyle(NSRoundedBezelStyle);
-			selectAllButton.setAction("callAction:");
-			selectAllButton.setCOSJSTargetFunction(function(sender) {
-				var scrolled = false;
-
-				deselectButtons(uiButtons);
-
-				context.document.currentPage().changeSelectionBySelectingLayers(nil);
-
-				var symbolType = (matchType.indexOfSelectedItem() == 0) ? symbolInstances : symbolOverrides,
-					predicate = NSPredicate.predicateWithFormat("parentPage == %@",context.document.currentPage()),
-					pageInstances = symbolType.filteredArrayUsingPredicate(predicate),
-					pageInstanceLoop = pageInstances.objectEnumerator(),
-					pageInstance;
-
-				while (pageInstance = pageInstanceLoop.nextObject()) {
-					pageInstance.select_byExtendingSelection(1,1);
-
-					var buttonToSelect = symbolType.indexOfObject(pageInstance);
-
-					uiButtons[buttonToSelect].setWantsLayer(1);
-					uiButtons[buttonToSelect].layer().setBorderWidth(2);
-					uiButtons[buttonToSelect].layer().setBorderColor(CGColorCreateGenericRGB(0,0,1,1));
-
-					if (scrolled == false) {
-						instanceFrame.subviews().firstObject().scrollPoint(NSMakePoint(0,96*buttonToSelect));
-						scrolled = true;
-					}
-				}
-			});
-
-			instancePanelContent.addSubview(selectAllButton);
-
-			var selectMasterButton = NSButton.alloc().initWithFrame(NSMakeRect(130,480,100,36));
-
-			selectMasterButton.setTitle("Go to Master");
-			selectMasterButton.setBezelStyle(NSRoundedBezelStyle);
-			selectMasterButton.setEnabled(context.document.pages().containsObject(symbolMaster.parentPage()));
-			selectMasterButton.setAction("callAction:");
-			selectMasterButton.setCOSJSTargetFunction(function(sender) {
-				deselectButtons(uiButtons);
-
-				context.document.currentPage().changeSelectionBySelectingLayers(nil);
-
-				var rect = symbolMaster.absoluteRect().rect();
-
-				MSDocument.currentDocument().setCurrentPage(symbolMaster.parentPage());
-				MSDocument.currentDocument().contentDrawView().zoomToFitRect(rect);
-
-				symbolMaster.select_byExtendingSelection(1,1);
-			});
-
-			instancePanelContent.addSubview(selectMasterButton);
-
-			// var refreshButton = NSButton.alloc().initWithFrame(NSMakeRect(230,450,120,36));
-			// refreshButton.setTitle("Refresh Results");
-			// refreshButton.setBezelStyle(NSRoundedBezelStyle);
-			// refreshButton.setEnabled(0);
-			// instancePanelContent.addSubview(refreshButton);
-
-			var instanceFrame = NSScrollView.alloc().initWithFrame(NSMakeRect(0,94,instancePanelWidth,384));
-
-			instanceFrame.setHasVerticalScroller(true);
-
-			instancePanelContent.addSubview(instanceFrame);
-
-			if (!symbolOverrides.length) {
-				matchType.setEnabled_forSegment(0,1);
-				matchType.setSelected_forSegment(1,0);
-			} else if (!symbolInstances.length) {
-				matchType.setEnabled_forSegment(0,0);
-				matchType.setSelected_forSegment(1,1);
-
-				instances = symbolOverrides;
-			} else {
-				matchType.cell().setAction("callAction:");
-				matchType.cell().setCOSJSTargetFunction(function(sender) {
-					instances = (sender.indexOfSelectedItem() == 0) ? symbolInstances : symbolOverrides;
-
-					displayInstances(instanceFrame,instances);
-				});
-			}
-
-			displayInstances(instanceFrame,instances);
-
-			instancePanel.contentView().addSubview(instancePanelContent);
-
-			if (!debugMode) googleAnalytics(context,"locate","run");
-		}
-	} else {
-		displayDialog("Select one symbol master or instance.",strPluginName);
+	if (selection.length != 1) {
+		sketch.UI.alert(pluginName,'Select one symbol master or instance.');
+		return false;
 	}
+
+	var selectionType = selection.layers[0].type;
+
+	if (selectionType != 'SymbolMaster' && selectionType != 'SymbolInstance') {
+		sketch.UI.alert(pluginName,'Select one symbol master or instance.');
+		return false;
+	}
+
+	var symbolMaster = (selectionType == 'SymbolMaster') ? selection.layers[0] : selection.layers[0].master;
+	var symbolMasterID = symbolMaster.id;
+	var symbolMasterLibrary = symbolMaster.getLibrary();
+	var symbolInstances = getSymbolInstances(document,symbolMaster);
+	var symbolOverrides = getSymbolOverrides(document,symbolMaster);
+	var symbolOverrideLayers;
+
+	if (!symbolInstances.length && !symbolOverrides.length) {
+		sketch.UI.alert(pluginName,symbolMaster.name + ' has no instances or overrides.');
+		return false;
+	}
+
+	var fiber = sketch.Async.createFiber();
+
+	var panel = createFloatingPanel(pluginName,NSMakeRect(0,0,panelWidth,panelHeight));
+
+	var panelClose = panel.standardWindowButton(NSWindowCloseButton);
+
+	panelClose.setCOSJSTargetFunction(function() {
+		panel.close();
+		fiber.cleanup();
+	});
+
+	var panelContent = createView(NSMakeRect(0,0,panelWidth,panelHeight - panelHeader));
+
+	var symbolName = createBoldDescription(symbolMaster.name,12,NSMakeRect(8,8,panelWidth - 16,16));
+	var typeSelect = createSegmentedControl(['Instances (' + symbolInstances.length + ')','Overrides (' + symbolOverrides.length + ')'],NSMakeRect(8,32,panelWidth - 16,24));
+	var instanceList = createScrollView(1,NSMakeRect(0,64,panelWidth,384));
+	var selectAll = createButton('Select All on Page',NSMakeRect(0,450,130,36));
+	var selectMaster = (symbolMasterLibrary) ? createButton('Go to Library Master',NSMakeRect(130,450,144,36)) : createButton('Go to Master',NSMakeRect(130,450,100,36));
+
+	[symbolName,typeSelect,instanceList,selectAll,selectMaster].forEach(i => panelContent.addSubview(i));
+
+	selectAll.setCOSJSTargetFunction(function() {
+		var scrolled = false;
+
+		deselectTargets(panelItems);
+
+		document.sketchObject.currentPage().changeSelectionBySelectingLayers(nil);
+
+		var symbolType = (typeSelect.indexOfSelectedItem() == 0) ? symbolInstances : symbolOverrides;
+
+		symbolType.forEach(function(instance,i){
+			if (instance.parentPage() == document.sketchObject.currentPage()) {
+				instance.select_byExtendingSelection(1,1);
+
+				panelItems[i].setWantsLayer(1);
+				panelItems[i].layer().setBorderWidth(2);
+				panelItems[i].layer().setBorderColor(CGColorCreateGenericRGB(0,0,1,1));
+
+				if (scrolled == false) {
+					instanceList.subviews().firstObject().scrollPoint(NSMakePoint(0,96 * i));
+					scrolled = true;
+				}
+			}
+		});
+	});
+
+	selectMaster.setCOSJSTargetFunction(function() {
+		deselectTargets(panelItems);
+
+		if (symbolMasterLibrary) {
+			sketch.Document.open(symbolMasterLibrary.sketchObject.locationOnDisk(),(err,document) => {
+				if (err) {
+					sketch.UI.alert(pluginName,'There was a problem opening the library.');
+				}
+
+				let symbolMaster = document.getSymbols().find(symbol => symbol.id === symbolMasterID);
+
+				document.sketchObject.documentWindow().makeKeyAndOrderFront(null);
+				document.sketchObject.setCurrentPage(symbolMaster.sketchObject.parentPage());
+				document.sketchObject.contentDrawView().zoomToFitRect(symbolMaster.sketchObject.absoluteRect().rect());
+
+				symbolMaster.sketchObject.select_byExtendingSelection(1,0);
+			});
+		} else {
+			document.sketchObject.currentPage().changeSelectionBySelectingLayers(nil);
+			document.sketchObject.setCurrentPage(symbolMaster.sketchObject.parentPage());
+			document.sketchObject.contentDrawView().zoomToFitRect(symbolMaster.sketchObject.absoluteRect().rect());
+
+			symbolMaster.sketchObject.select_byExtendingSelection(1,0);
+		}
+	});
+
+	if (!symbolOverrides.length) {
+		displayInstances(instanceList,symbolInstances,0);
+
+		typeSelect.setEnabled_forSegment(0,1);
+		typeSelect.setSelected_forSegment(1,0);
+	} else if (!symbolInstances.length) {
+		displayInstances(instanceList,symbolOverrides,1);
+
+		typeSelect.setEnabled_forSegment(0,0);
+		typeSelect.setSelected_forSegment(1,1);
+	} else {
+		displayInstances(instanceList,symbolInstances,0);
+
+		typeSelect.cell().setAction('callAction:');
+		typeSelect.cell().setCOSJSTargetFunction(function(sender) {
+			var instances = (sender.indexOfSelectedItem() == 0) ? symbolInstances : symbolOverrides;
+
+			displayInstances(instanceList,instances,sender.indexOfSelectedItem());
+		});
+	}
+
+	panel.contentView().addSubview(panelContent);
+
+	if (!debugMode) googleAnalytics(context,'locate','run');
 }
 
 var report = function(context) {
-	openUrl("https://github.com/sonburn/symbol-instance-locator/issues/new");
+	openUrl('https://github.com/sonburn/symbol-instance-locator/issues/new');
 
-	if (!debugMode) googleAnalytics(context,"report","report");
+	if (!debugMode) googleAnalytics(context,'report','report');
 }
 
 var plugins = function(context) {
-	openUrl("https://sonburn.github.io/");
+	openUrl('https://sonburn.github.io/');
 
-	if (!debugMode) googleAnalytics(context,"plugins","plugins");
+	if (!debugMode) googleAnalytics(context,'plugins','plugins');
 }
 
 var donate = function(context) {
-	openUrl("https://www.paypal.me/sonburn");
+	openUrl('https://www.paypal.me/sonburn');
 
-	if (!debugMode) googleAnalytics(context,"donate","donate");
+	if (!debugMode) googleAnalytics(context,'donate','donate');
 }
 
 function createBoldDescription(text,size,frame,alpha) {
-	var label = NSTextField.alloc().initWithFrame(frame),
-		alpha = (alpha) ? alpha : 1.0;
+	var label = NSTextField.alloc().initWithFrame(frame);
 
 	label.setStringValue(text);
 	label.setFont(NSFont.boldSystemFontOfSize(size));
-	label.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,alpha));
+	label.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,(alpha) ? alpha : 1.0));
 	label.setBezeled(false);
 	label.setDrawsBackground(false);
 	label.setEditable(false);
@@ -195,19 +167,14 @@ function createBoldDescription(text,size,frame,alpha) {
 	return label;
 }
 
-function createDescription(text,size,frame,alpha) {
-	var label = NSTextField.alloc().initWithFrame(frame),
-		alpha = (alpha) ? alpha : 1.0;
+function createButton(label,frame) {
+	var button = NSButton.alloc().initWithFrame(frame);
 
-	label.setStringValue(text);
-	label.setFont(NSFont.systemFontOfSize(size));
-	label.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,alpha));
-	label.setBezeled(false);
-	label.setDrawsBackground(false);
-	label.setEditable(false);
-	label.setSelectable(false);
+	button.setTitle(label);
+	button.setBezelStyle(NSRoundedBezelStyle);
+	button.setAction('callAction:');
 
-	return label;
+	return button;
 }
 
 function createDivider(frame) {
@@ -219,13 +186,28 @@ function createDivider(frame) {
 	return divider;
 }
 
-function createImageArea(instance,frame) {
-	var imageArea = NSButton.alloc().initWithFrame(frame);
+function createFloatingPanel(title,frame) {
+	var panel = NSPanel.alloc().init();
 
-	imageArea.setTitle("");
-	imageArea.setBordered(0);
-	imageArea.setWantsLayer(1);
-	imageArea.layer().setBackgroundColor(CGColorCreateGenericRGB(248/255,248/255,248/255,1.0));
+	panel.setTitle(title);
+	panel.setFrame_display(frame,true);
+	panel.setStyleMask(NSTexturedBackgroundWindowMask | NSTitledWindowMask | NSClosableWindowMask | NSFullSizeContentViewWindowMask);
+	panel.setBackgroundColor(NSColor.controlColor());
+	panel.setLevel(NSFloatingWindowLevel);
+	panel.standardWindowButton(NSWindowMiniaturizeButton).setHidden(true);
+	panel.standardWindowButton(NSWindowZoomButton).setHidden(true);
+	panel.makeKeyAndOrderFront(null);
+	panel.center();
+
+	return panel;
+}
+
+function createImage(instance,frame) {
+	var image = NSButton.alloc().initWithFrame(frame);
+
+	image.setBordered(0);
+	image.setWantsLayer(1);
+	image.layer().setBackgroundColor(CGColorCreateGenericRGB(248/255,248/255,248/255,1.0));
 
 	var exportRequest = MSExportRequest.exportRequestsFromExportableLayer_inRect_useIDForName_(
 		instance,
@@ -233,71 +215,62 @@ function createImageArea(instance,frame) {
 		false
 		).firstObject();
 
-	exportRequest.format = "png";
+	exportRequest.format = 'png';
 
-	var scaleX = (frame.size.width-4*2) / exportRequest.rect().size.width;
-	var scaleY = (frame.size.height-4*2) / exportRequest.rect().size.height;
+	var scaleX = (frame.size.width - 4 * 2) / exportRequest.rect().size.width;
+	var scaleY = (frame.size.height - 4 * 2) / exportRequest.rect().size.height;
 
 	exportRequest.scale = (scaleX < scaleY) ? scaleX : scaleY;
 
-	var colorSpace = NSColorSpace.sRGBColorSpace(),
-		exporter = MSExporter.exporterForRequest_colorSpace_(exportRequest,colorSpace),
-		imageRep = exporter.bitmapImageRep(),
-		instanceImage = NSImage.alloc().init().autorelease();
+	var colorSpace = NSColorSpace.sRGBColorSpace();
+	var exporter = MSExporter.exporterForRequest_colorSpace_(exportRequest,colorSpace);
+	var imageRep = exporter.bitmapImageRep();
+	var instanceImage = NSImage.alloc().init().autorelease();
 
 	instanceImage.addRepresentation(imageRep);
 
-	imageArea.setImage(instanceImage);
+	image.setImage(instanceImage);
 
-	return imageArea;
+	return image;
 }
 
-function createListItem(instance,frame) {
-	var listItem = NSView.alloc().initWithFrame(frame),
-		rightColWidth = 140,
-		leftColWidth = frame.size.width-rightColWidth,
-		leftPad = 8;
+function createScrollView(border,frame) {
+	var view = NSScrollView.alloc().initWithFrame(frame);
 
-	listItem.setFlipped(1);
-	listItem.addSubview(createTextLabel("Page",NSMakeRect(leftPad,6,leftColWidth,14)));
-	listItem.addSubview(createTextField(instance.parentPage().name(),NSMakeRect(leftPad,18,leftColWidth-leftPad,18)));
-	listItem.addSubview(createTextLabel("Artboard",NSMakeRect(leftPad,34,leftColWidth,14)));
-	listItem.addSubview(createTextField((instance.parentArtboard()) ? instance.parentArtboard().name() : "None",NSMakeRect(leftPad,46,leftColWidth-leftPad,18)));
-	listItem.addSubview(createTextLabel("Instance",NSMakeRect(leftPad,62,leftColWidth,14)));
-	listItem.addSubview(createTextField(instance.name(),NSMakeRect(leftPad,74,leftColWidth-leftPad,18)));
-	listItem.addSubview(createImageArea(instance,NSMakeRect(leftColWidth,0,rightColWidth,frame.size.height)));
-	listItem.addSubview(createDivider(NSMakeRect(0,frame.size.height-1,frame.size.width,1)));
-	listItem.addSubview(createTargetArea(instance,NSMakeRect(0,0,frame.size.width,frame.size.height)));
+	view.setHasVerticalScroller(1);
 
-	return listItem;
+	if (border) {
+		view.addSubview(createDivider(NSMakeRect(0,0,frame.size.width,1)));
+		view.addSubview(createDivider(NSMakeRect(0,frame.size.height - 1,frame.size.width,1)));
+	}
+
+	return view;
 }
 
 function createSegmentedControl(items,frame) {
-	var segControl = NSSegmentedControl.alloc().initWithFrame(frame);
+	var control = NSSegmentedControl.alloc().initWithFrame(frame);
 
-	segControl.setSegmentCount(items.length);
+	control.setSegmentCount(items.length);
 
 	items.forEach(function(item,index) {
-		segControl.setLabel_forSegment(item,index);
-		segControl.setWidth_forSegment(120,index);
+		control.setLabel_forSegment(item,index);
+		control.setWidth_forSegment(frame.size.width / items.length - 4,index);
 	});
 
-	segControl.cell().setTrackingMode(0); //Raw value of NSSegmentSwitchTrackingSelectOne.
-	segControl.setSelected_forSegment(1,0);
+	control.cell().setTrackingMode(0);
+	control.setSelected_forSegment(1,0);
 
-	return segControl;
+	return control;
 }
 
-function createTargetArea(instance,frame) {
-	var targetArea = NSButton.alloc().initWithFrame(frame);
+function createTarget(instance,targets,frame) {
+	var target = NSButton.alloc().initWithFrame(frame);
 
-	uiButtons.push(targetArea);
-
-	targetArea.addCursorRect_cursor(targetArea.frame(),NSCursor.pointingHandCursor());
-	targetArea.setTransparent(1);
-	targetArea.setAction("callAction:");
-	targetArea.setCOSJSTargetFunction(function(sender) {
-		deselectButtons(uiButtons);
+	target.addCursorRect_cursor(target.frame(),NSCursor.pointingHandCursor());
+	target.setTransparent(1);
+	target.setAction('callAction:');
+	target.setCOSJSTargetFunction(function(sender) {
+		deselectTargets(panelItems);
 
 		sender.setWantsLayer(1);
 		sender.layer().setBorderWidth(2);
@@ -305,180 +278,191 @@ function createTargetArea(instance,frame) {
 
 		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.absoluteRect().rect();
 
-		MSDocument.currentDocument().setCurrentPage(instance.parentPage());
-		MSDocument.currentDocument().contentDrawView().zoomToFitRect(rect);
+		document.sketchObject.documentWindow().makeKeyAndOrderFront(null);
+		document.sketchObject.setCurrentPage(instance.parentPage());
+		document.sketchObject.contentDrawView().zoomToFitRect(rect);
 
 		instance.select_byExtendingSelection(1,0);
 	});
 
-	return targetArea;
+	targets.push(target);
+
+	return target;
 }
 
 function createTextField(string,frame) {
-	var textField = NSTextField.alloc().initWithFrame(frame);
+	var field = NSTextField.alloc().initWithFrame(frame);
 
-	textField.setStringValue(string);
-	textField.setFont(NSFont.systemFontOfSize(11));
-	textField.setBezeled(0);
-	textField.setEditable(0);
-	textField.setLineBreakMode(NSLineBreakByTruncatingTail);
+	field.setStringValue(string);
+	field.setFont(NSFont.systemFontOfSize(11));
+	field.setBezeled(0);
+	field.setEditable(0);
+	field.setLineBreakMode(NSLineBreakByTruncatingTail);
 
-	return textField;
+	return field;
 }
 
 function createTextLabel(string,frame) {
-	var textLabel = NSTextField.alloc().initWithFrame(frame);
+	var field = NSTextField.alloc().initWithFrame(frame);
 
-	textLabel.setStringValue(string);
-	textLabel.setFont(NSFont.systemFontOfSize(9));
-	textLabel.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,0.4));
-	textLabel.setBezeled(0);
-	textLabel.setEditable(0);
+	field.setStringValue(string);
+	field.setFont(NSFont.systemFontOfSize(9));
+	field.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0,0,0,0.4));
+	field.setBezeled(0);
+	field.setEditable(0);
 
-	return textLabel;
+	return field;
 }
 
-function deselectButtons(buttons) {
-	for (var i = 0; i < buttons.length; i++) {
-		if (buttons[i].layer()) {
-			buttons[i].layer().setBorderWidth(0);
-			buttons[i].setWantsLayer(0);
+function createView(frame) {
+	var view = NSView.alloc().initWithFrame(frame);
+
+	view.setFlipped(1);
+
+	return view;
+}
+
+function deselectTargets(targets) {
+	targets.forEach(function(target){
+		if (target.layer()) {
+			target.layer().setBorderWidth(0);
+			target.setWantsLayer(0);
 		}
-	}
+	});
 }
 
-function displayDialog(message,title) {
-	NSApplication.sharedApplication().displayDialog_withTitle(message,title);
-}
+function displayInstances(parent,instances,type) {
+	panelItems = [];
 
-function displayInstances(parent,instances) {
-	uiButtons = [];
+	var instanceHeight = 96;
+	var instanceWidth = panelWidth - panelGutter;
+	var instanceContent = createView(NSMakeRect(0,0,instanceWidth,instanceHeight * instances.length));
+	var leftColWidth = 140;
+	var rightColPad = 8
+	var rightColWidth = instanceWidth - leftColWidth - rightColPad;
+	var rightColX = rightColPad + leftColWidth;
+	var count = 0;
 
-	var instanceHeight = 96,
-		instanceWidth = instancePanelWidth - gutterWidth,
-		instanceContent = NSView.alloc().initWithFrame(NSMakeRect(0,0,instanceWidth,instanceHeight*instances.length)),
-		count = 0;
+	instances.forEach(function(instance,i){
+		var listItem = createView(NSMakeRect(0,instanceHeight*count,instanceWidth,instanceHeight));
 
-	instanceContent.setFlipped(true);
+		if (type) {
+			var imageArea = createImage(instance,NSMakeRect(0,0,leftColWidth,instanceHeight));
+			var artboardLabel = createTextLabel('Artboard',NSMakeRect(rightColX,6,rightColWidth,14));
+			var artboardField = createTextField((instance.parentArtboard()) ? instance.parentArtboard().name() : 'None',NSMakeRect(rightColX,18,rightColWidth,18));
+			var instanceLabel = createTextLabel('Instance',NSMakeRect(rightColX,34,rightColWidth,14));
+			var instanceField = createTextField(instance.name(),NSMakeRect(rightColX,46,rightColWidth,18));
+			var layerLabel = createTextLabel('Layer',NSMakeRect(rightColX,62,rightColWidth,14));
+			var layerField = createTextField(symbolOverrideLayers[i],NSMakeRect(rightColX,74,rightColWidth,18));
+			var targetArea = createTarget(instance,panelItems,NSMakeRect(0,0,instanceWidth,instanceHeight));
+			var divider = createDivider(NSMakeRect(0,instanceHeight - 1,instanceWidth,1));
 
-	for (var i = 0; i < instances.length; i++) {
-		var instance = createListItem(instances[i],NSMakeRect(0,instanceHeight*count,instanceWidth,instanceHeight));
+			[imageArea,artboardLabel,artboardField,instanceLabel,instanceField,layerLabel,layerField,targetArea,divider].forEach(i => listItem.addSubview(i));
+		} else {
+			var imageArea = createImage(instance,NSMakeRect(0,0,leftColWidth,instanceHeight));
+			var pageLabel = createTextLabel('Page',NSMakeRect(rightColX,6,rightColWidth,14));
+			var pageField = createTextField(instance.parentPage().name(),NSMakeRect(rightColX,18,rightColWidth,18));
+			var artboardLabel = createTextLabel('Artboard',NSMakeRect(rightColX,34,rightColWidth,14));
+			var artboardField = createTextField((instance.parentArtboard()) ? instance.parentArtboard().name() : 'None',NSMakeRect(rightColX,46,rightColWidth,18));
+			var instanceLabel = createTextLabel('Instance',NSMakeRect(rightColX,62,rightColWidth,14));
+			var instanceField = createTextField(instance.name(),NSMakeRect(rightColX,74,rightColWidth,18));
+			var targetArea = createTarget(instance,panelItems,NSMakeRect(0,0,instanceWidth,instanceHeight));
+			var divider = createDivider(NSMakeRect(0,instanceHeight - 1,instanceWidth,1));
 
-		instanceContent.addSubview(instance);
+			[imageArea,pageLabel,pageField,artboardLabel,artboardField,instanceLabel,instanceField,targetArea,divider].forEach(i => listItem.addSubview(i));
+		}
+
+		instanceContent.addSubview(listItem);
 
 		count++;
-	}
+	});
 
 	parent.setDocumentView(instanceContent);
 }
 
-function getSymbolInstances(context,symbolMaster) {
+function getSymbolInstances(source,symbolMaster) {
 	var symbolInstances = NSMutableArray.array();
 
-	var pages = context.document.pages(),
-		pageLoop = pages.objectEnumerator(),
-		page;
+	source.sketchObject.pages().forEach(function(page){
+		var predicate = NSPredicate.predicateWithFormat('className == %@ && symbolMaster.objectID == %@','MSSymbolInstance',symbolMaster.sketchObject.objectID());
 
-	while (page = pageLoop.nextObject()) {
-		var predicate = NSPredicate.predicateWithFormat("className == 'MSSymbolInstance' && symbolMaster == %@",symbolMaster),
-			instances = page.children().filteredArrayUsingPredicate(predicate),
-			instanceLoop = instances.objectEnumerator(),
-			instance;
-
-		while (instance = instanceLoop.nextObject()) {
-			symbolInstances.addObject(instance);
-		}
-	}
+		page.children().filteredArrayUsingPredicate(predicate).forEach(instance => symbolInstances.addObject(instance));
+	});
 
 	return symbolInstances;
 }
 
-function getSymbolOverrides(context,symbolMaster) {
+function getSymbolOverrides(source,symbolMaster) {
 	var symbolOverrides = NSMutableArray.array();
+	symbolOverrideLayers = [];
 
-	var pages = context.document.pages(),
-		pageLoop = pages.objectEnumerator(),
-		page;
+	source.sketchObject.pages().forEach(function(page){
+		var predicate = NSPredicate.predicateWithFormat('className == %@ && overrides != nil && availableOverrides != nil && overrideValues != nil','MSSymbolInstance');
 
-	while (page = pageLoop.nextObject()) {
-		var predicate = NSPredicate.predicateWithFormat("className == %@ && overrideValues != nil","MSSymbolInstance"),
-			instances = page.children().filteredArrayUsingPredicate(predicate),
-			instanceLoop = instances.objectEnumerator(),
-			instance;
+		page.children().filteredArrayUsingPredicate(predicate).forEach(function(instance){
+			instance.availableOverrides().forEach(function(override) {
+				if (override.hasOverride()) {
+					if (String(override.overrideValue()) == symbolMaster.sketchObject.symbolID()) {
+						symbolOverrides.addObject(instance);
+						symbolOverrideLayers.push(override.affectedLayer().name());
+					}
 
-		while (instance = instanceLoop.nextObject()) {
-			if (instance.overrides()) {
-				var overrides = instance.availableOverrides(),
-					symbolMasterID = String(symbolMaster.symbolID());
-
-				if (overrides) {
-					overrides.forEach(function(override) {
-						if (override.hasOverride()) {
-							if (String(override.overrideValue()) == symbolMasterID) {
-								if (!symbolOverrides.containsObject(instance)) {
-									symbolOverrides.addObject(instance);
-								}
-							} else {
-								if (override.children()) {
-									override.children().forEach(function(child) {
-										if (child.className() == "MSSymbolOverride" && String(child.overrideValue()) == symbolMasterID) {
-											if (!symbolOverrides.containsObject(instance)) {
-												symbolOverrides.addObject(instance);
-											}
-										}
-									});
-								}
+					if (override.children()) {
+						override.children().forEach(function(child) {
+							if (child.className() == 'MSSymbolOverride' && String(child.overrideValue()) == symbolMaster.sketchObject.symbolID()) {
+								symbolOverrides.addObject(instance);
+								symbolOverrideLayers.push(override.affectedLayer().name());
 							}
-						}
-					});
+						});
+					}
 				}
-			}
-		}
-	}
+			});
+		});
+	});
 
 	return symbolOverrides;
 }
 
 function googleAnalytics(context,category,action,label,value) {
-	var trackingID = "UA-118987499-1",
-		uuidKey = "google.analytics.uuid",
-		uuid = NSUserDefaults.standardUserDefaults().objectForKey(uuidKey);
+	var trackingID = 'UA-118987499-1';
+	var uuidKey = 'google.analytics.uuid';
+	var uuid = NSUserDefaults.standardUserDefaults().objectForKey(uuidKey);
 
 	if (!uuid) {
 		uuid = NSUUID.UUID().UUIDString();
 		NSUserDefaults.standardUserDefaults().setObject_forKey(uuid,uuidKey);
 	}
 
-	var url = "https://www.google-analytics.com/collect?v=1";
+	var url = 'https://www.google-analytics.com/collect?v=1';
 	// Tracking ID
-	url += "&tid=" + trackingID;
+	url += '&tid=' + trackingID;
 	// Source
-	url += "&ds=sketch" + MSApplicationMetadata.metadata().appVersion;
+	url += '&ds=sketch' + MSApplicationMetadata.metadata().appVersion;
 	// Client ID
-	url += "&cid=" + uuid;
+	url += '&cid=' + uuid;
 	// pageview, screenview, event, transaction, item, social, exception, timing
-	url += "&t=event";
+	url += '&t=event';
 	// App Name
-	url += "&an=" + encodeURI(context.plugin.name());
+	url += '&an=' + encodeURI(context.plugin.name());
 	// App ID
-	url += "&aid=" + context.plugin.identifier();
+	url += '&aid=' + context.plugin.identifier();
 	// App Version
-	url += "&av=" + context.plugin.version();
+	url += '&av=' + context.plugin.version();
 	// Event category
-	url += "&ec=" + encodeURI(category);
+	url += '&ec=' + encodeURI(category);
 	// Event action
-	url += "&ea=" + encodeURI(action);
+	url += '&ea=' + encodeURI(action);
 	// Event label
 	if (label) {
-		url += "&el=" + encodeURI(label);
+		url += '&el=' + encodeURI(label);
 	}
 	// Event value
 	if (value) {
-		url += "&ev=" + encodeURI(value);
+		url += '&ev=' + encodeURI(value);
 	}
 
-	var session = NSURLSession.sharedSession(),
-		task = session.dataTaskWithURL(NSURL.URLWithString(NSString.stringWithString(url)));
+	var session = NSURLSession.sharedSession();
+	var task = session.dataTaskWithURL(NSURL.URLWithString(NSString.stringWithString(url)));
 
 	task.resume();
 }
