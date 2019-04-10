@@ -12,6 +12,7 @@
 			"name" : "Symbol Instance Locator",
 			"shortcut" : "cmd option shift l",
 			"identifier" : "locate",
+			"icon": "icon.png",
 			"description" : "Locate instances of the selected symbol or instance.",
 			"script" : "script.js",
 			"handler" : "locate"
@@ -19,18 +20,21 @@
 		{
 			"name": "Report Issue",
 			"identifier": "report",
+			"icon": "icon.png",
 			"script" : "script.js",
 			"handler": "report"
 		},
 		{
 			"name": "Other Plugins",
 			"identifier": "plugins",
+			"icon": "icon.png",
 			"script" : "script.js",
 			"handler": "plugins"
 		},
 		{
 			"name": "Donate",
 			"identifier": "donate",
+			"icon": "icon.png",
 			"script" : "script.js",
 			"handler": "donate"
 		}
