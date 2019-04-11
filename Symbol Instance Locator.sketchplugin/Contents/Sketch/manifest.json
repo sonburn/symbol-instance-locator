@@ -12,8 +12,8 @@
 			"name" : "Symbol Instance Locator",
 			"shortcut" : "cmd option shift l",
 			"identifier" : "locate",
-			"icon" : "icon.png",
 			"description" : "Locate instances of the selected symbol or instance.",
+			"icon" : "icon.png",
 			"script" : "script.js",
 			"handler" : "locate"
 		},
