@@ -12,31 +12,34 @@
 			"name" : "Symbol Instance Locator",
 			"shortcut" : "cmd option shift l",
 			"identifier" : "locate",
-			"icon": "icon.png",
+			"icon" : "icon.png",
 			"description" : "Locate instances of the selected symbol or instance.",
 			"script" : "script.js",
 			"handler" : "locate"
 		},
 		{
-			"name": "Report Issue",
-			"identifier": "report",
-			"icon": "icon.png",
+			"name" : "Report Issue",
+			"identifier" : "report",
+			"description" : "Report an issue with Symbol Instance Locator.",
+			"icon" : "icon.png",
 			"script" : "script.js",
-			"handler": "report"
+			"handler" : "report"
 		},
 		{
-			"name": "Other Plugins",
-			"identifier": "plugins",
-			"icon": "icon.png",
+			"name" : "Other Plugins",
+			"identifier" : "plugins",
+			"description" : "View all of Sonburn's plugins.",
+			"icon" : "icon.png",
 			"script" : "script.js",
-			"handler": "plugins"
+			"handler" : "plugins"
 		},
 		{
-			"name": "Donate",
-			"identifier": "donate",
-			"icon": "icon.png",
+			"name" : "Donate",
+			"identifier" : "donate",
+			"description" : "Donate to the development of Symbol Instance Locator.",
+			"icon" : "icon.png",
 			"script" : "script.js",
-			"handler": "donate"
+			"handler" : "donate"
 		}
 	],
 	"menu" : {
