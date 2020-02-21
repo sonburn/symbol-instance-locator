@@ -158,7 +158,7 @@ function createBoldDescription(text,size,frame,alpha) {
 
 	label.setStringValue(text);
 	label.setFont(NSFont.boldSystemFontOfSize(size));
-	label.setTextColor(NSColor.colorWithCalibratedRed_green_blue_alpha(0/255,0/255,0/255,(alpha) ? alpha : 1.0));
+	label.setTextColor(NSColor.controlTextColor());
 	label.setBezeled(false);
 	label.setDrawsBackground(false);
 	label.setEditable(false);
@@ -181,7 +181,7 @@ function createDivider(frame) {
 	var divider = NSView.alloc().initWithFrame(frame);
 
 	divider.setWantsLayer(1);
-	divider.layer().setBackgroundColor(CGColorCreateGenericRGB(204/255,204/255,204/255,1.0));
+	divider.layer().setBackgroundColor(isUsingDarkTheme() ? CGColorCreateGenericRGB(40/255,40/255,40/255,1.0) : CGColorCreateGenericRGB(104/255,104/255,104/255,1.0));
 
 	return divider;
 }
@@ -193,6 +193,7 @@ function createFloatingPanel(title,frame) {
 	panel.setFrame_display(frame,true);
 	panel.setStyleMask(NSTexturedBackgroundWindowMask | NSTitledWindowMask | NSClosableWindowMask | NSFullSizeContentViewWindowMask);
 	panel.setBackgroundColor(NSColor.controlColor());
+	panel.setBackgroundColor(NSColor.controlBackgroundColor());
 	panel.setLevel(NSFloatingWindowLevel);
 	panel.standardWindowButton(NSWindowMiniaturizeButton).setHidden(true);
 	panel.standardWindowButton(NSWindowZoomButton).setHidden(true);
@@ -465,6 +466,10 @@ function googleAnalytics(context,category,action,label,value) {
 	var task = session.dataTaskWithURL(NSURL.URLWithString(NSString.stringWithString(url)));
 
 	task.resume();
+}
+
+function isUsingDarkTheme() {
+	return (NSUserDefaults.standardUserDefaults().stringForKey("AppleInterfaceStyle") == "Dark") ? true : false;
 }
 
 function openUrl(url) {
