@@ -8,7 +8,7 @@ var debugMode = false;
 var panelHeader = 44;
 var panelFooter = 38;
 var panelHeight = panelHeader + 448 + panelFooter;
-var panelWidth = 350;
+var panelWidth = 640;
 var panelGutter = 15;
 var panelItems = [];
 
