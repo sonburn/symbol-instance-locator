@@ -39,6 +39,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.15** - Improvements to responsiveness, result accuracy, and better darkmode support. Fix for Sketch 72.
 * **1.14** - If instance master is in library, 'Go to Master' will now open the library. Override instances now show each instance and overridden layer name.
 * **1.13** - Fix for Sketch 53.
 * **1.12** - Fix for "null is not an object (evaluating 'overrides.forEach')" issue.
@@ -68,4 +69,4 @@ If you find this plugin helpful, or would like to support my plugins in general,
 
 # License
 
-Copyright (c) 2019 Jason Burns (Sonburn). See LICENSE.md for further details.
+Copyright (c) 2021 Jason Burns (Sonburn). See LICENSE.md for further details.
