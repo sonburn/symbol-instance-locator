@@ -35,6 +35,7 @@ To find your plugins directory...
 
 # Changelog
 
+* **1.16** - Fix for non-modified overrides appearing as overrides for instance.
 * **1.15** - Improvements to responsiveness, result accuracy, and better darkmode support. Fix for Sketch 72.
 * **1.14** - If instance master is in library, 'Go to Master' will now open the library. Override instances now show each instance and overridden layer name.
 * **1.13** - Fix for Sketch 53.

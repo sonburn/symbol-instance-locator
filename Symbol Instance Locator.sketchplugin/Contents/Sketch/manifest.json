@@ -3,7 +3,7 @@
 	"description" : "Locate all instances of a selected symbol or instance.",
 	"author" : "Jason Burns",
 	"homepage" : "https://github.com/sonburn/symbol-instance-locator",
-	"version" : "1.15",
+	"version" : "1.16",
 	"identifier" : "com.sonburn.sketchplugins.symbol-instance-locator",
 	"appcast" : "https://raw.githubusercontent.com/sonburn/symbol-instance-locator/master/appcast.xml",
 	"icon" : "icon.png",

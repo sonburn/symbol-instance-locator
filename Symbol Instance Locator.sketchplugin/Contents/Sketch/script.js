@@ -33,7 +33,7 @@ var locate = function(context) {
 	var symbolOverrides = []
 
 	instances.forEach(i => {
-		let overrides = i.overrides.filter(o => o.editable == true && o.property == 'symbolID' && o.value == symbolMaster.symbolId)
+		let overrides = i.overrides.filter(o => o.isDefault == false && o.editable == true && o.property == 'symbolID' && o.value == symbolMaster.symbolId)
 
 		overrides.forEach(o => symbolOverrides.push({ instance : i, affectedLayer : o.affectedLayer }))
 	})
