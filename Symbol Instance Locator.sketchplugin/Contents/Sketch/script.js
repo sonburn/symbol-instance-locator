@@ -106,14 +106,14 @@ var locate = function(context) {
 
 				document.sketchObject.documentWindow().makeKeyAndOrderFront(null)
 				document.sketchObject.setCurrentPage(symbolMaster.sketchObject.parentPage())
-				document.sketchObject.contentDrawView().zoomToFitRect(symbolMaster.sketchObject.absoluteRect().rect())
+				document.sketchObject.contentDrawView().zoomToFitRect(symbolMaster.sketchObject.frame().rect())
 
 				symbolMaster.sketchObject.select_byExtendingSelection(1,0)
 			})
 		} else {
 			document.sketchObject.currentPage().changeSelectionBySelectingLayers(nil)
 			document.sketchObject.setCurrentPage(symbolMaster.sketchObject.parentPage())
-			document.sketchObject.contentDrawView().zoomToFitRect(symbolMaster.sketchObject.absoluteRect().rect())
+			document.sketchObject.contentDrawView().zoomToFitRect(symbolMaster.sketchObject.frame().rect())
 
 			symbolMaster.sketchObject.select_byExtendingSelection(1,0)
 		}
@@ -286,7 +286,7 @@ function createTarget(instance,targets,frame) {
 		sender.layer().setBorderWidth(2)
 		sender.layer().setBorderColor(NSColor.controlAccentColor().CGColor())
 
-		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.absoluteRect().rect()
+		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.frame().rect()
 
 		document.sketchObject.documentWindow().makeKeyAndOrderFront(null)
 		document.sketchObject.setCurrentPage(instance.parentPage())
