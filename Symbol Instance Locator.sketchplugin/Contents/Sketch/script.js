@@ -106,14 +106,14 @@ var locate = function(context) {
 
 				document.sketchObject.documentWindow().makeKeyAndOrderFront(null)
 				document.sketchObject.setCurrentPage(symbolMaster.sketchObject.parentPage())
-				document.sketchObject.contentDrawView().zoomToFitRect(symbolMaster.sketchObject.absoluteRect().rect())
+				document.sketchObject.contentDrawView().zoomToFitRect(symbolMaster.sketchObject.frame().rect())
 
 				symbolMaster.sketchObject.select_byExtendingSelection(1,0)
 			})
 		} else {
 			document.sketchObject.currentPage().changeSelectionBySelectingLayers(nil)
 			document.sketchObject.setCurrentPage(symbolMaster.sketchObject.parentPage())
-			document.sketchObject.contentDrawView().zoomToFitRect(symbolMaster.sketchObject.absoluteRect().rect())
+			document.sketchObject.contentDrawView().zoomToFitRect(symbolMaster.sketchObject.frame().rect())
 
 			symbolMaster.sketchObject.select_byExtendingSelection(1,0)
 		}
@@ -219,11 +219,11 @@ function createImage(instance,frame) {
 	image.setWantsLayer(1)
 	image.layer().setBackgroundColor(NSColor.controlBackgroundColor())
 
-	var exportRequest = MSExportRequest.exportRequestsFromExportableLayer_inRect_useIDForName_(
-		instance,
-		instance.absoluteInfluenceRect(),
-		false
-		).firstObject()
+	var exportRequest = MSExportRequest.exportRequestsFromLayerAncestry_(instance.ancestry()).firstObject()
+	var exporter = MSExporter.exporterForRequest_colorSpace_(exportRequest, null)
+	// This will make sure exportRequest.rect() is calculated correctly before we use it below
+	// See https://forum.sketch.com/t/absoluteinfluencerect-removed-in-sketch-96/1031/4
+	_= exporter.trimmedBounds()
 
 	exportRequest.format = 'png'
 
@@ -232,9 +232,7 @@ function createImage(instance,frame) {
 
 	exportRequest.scale = (scaleX < scaleY) ? scaleX : scaleY
 
-	var colorSpace = NSColorSpace.sRGBColorSpace()
-	var exporter = MSExporter.exporterForRequest_colorSpace_(exportRequest,colorSpace)
-	var imageRep = exporter.bitmapImageRep()
+	var imageRep = exporter.bitmapImageRepAndReturnError(null)
 	var instanceImage = NSImage.alloc().init().autorelease()
 
 	instanceImage.addRepresentation(imageRep)
@@ -286,7 +284,7 @@ function createTarget(instance,targets,frame) {
 		sender.layer().setBorderWidth(2)
 		sender.layer().setBorderColor(NSColor.controlAccentColor().CGColor())
 
-		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.absoluteRect().rect()
+		var rect = (instance.parentArtboard()) ? instance.parentArtboard().rect() : instance.frame().rect()
 
 		document.sketchObject.documentWindow().makeKeyAndOrderFront(null)
 		document.sketchObject.setCurrentPage(instance.parentPage())
